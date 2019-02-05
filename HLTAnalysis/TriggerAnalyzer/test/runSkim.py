@@ -1,16 +1,13 @@
-
-
-
 import FWCore.ParameterSet.Config as cms
 
 
-IsData=True
-globaltag='101X_mc2017_realistic_TSG_2018_04_09_20_43_53'
-HLTsave=False ; 
+IsData = False
+globaltag = '102X_upgrade2018_realistic_v15'
+HLTsave = False ; 
 if IsData:
    print "We have established we Run on data"
-   globaltag='101X_dataRun2_HLT_v7'
-   HLTsave=True ; 
+   globaltag = '102X_dataRun2_Prompt_v11'
+   HLTsave = True ; 
 else:
    print "We have established we Run on MC"
 print "Run parameters ",globaltag," HLT ",HLTsave
@@ -32,49 +29,31 @@ process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag,globaltag,'')
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
 
 process.source = cms.Source("PoolSource",
-    # replace 'myfile.root' with the source file you want to use
-    fileNames = cms.untracked.vstring(
-#'/store/mc/RunIIFall17DRPremix/BToJPsiKMu_JpsiMuMu_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PU2017_94X_mc2017_realistic_v11-v1/910000/EC4C8C41-1149-E811-9973-C0BFC0E56836.root'
-#'/store/cmst3/group/bpark/gkaratha/FastSim_GenBToKEE_NonD_muFilter_ForProbe_try1/BToKEE/CRAB3_fastsim/181021_215057/0000/B0tpDstarMu_fast_AOD_253.root'
-#'/store/user/tstreble/BToKee_Pythia/BToKee_Pythia_AODSIM_18_03_22/180321_162718/0000/BToKee_AODSIM_61.root',
-#'/store/user/tstreble/BToKee_Pythia/BToKee_Pythia_AODSIM_18_03_22/180321_162718/0000/BToKee_AODSIM_62.root',
-#'/store/user/tstreble/BToKee_Pythia/BToKee_Pythia_AODSIM_18_03_22/180321_162718/0000/BToKee_AODSIM_63.root'
-'/store/data/Run2018B/ParkingBPH5/AOD/PromptReco-v1/000/317/650/00000/E216E20E-E06E-E811-8F13-FA163E15F06E.root'
-#'/store/relval/CMSSW_10_2_4_patch1/SingleMuon/RAW-RECO/ZMu-102X_dataRun2_PromptLike_v7_RelVal_sigMu2018B-v1/20000/FD9563D8-9350-784C-82D0-250AE00E4160.root'
-#'/store/relval/CMSSW_10_1_4/SingleMuon/RECO/2018_06_05_23_31_HLTnewco_101X_dataRun2_HLT_DT_vDrift_Ttrig_w23_2018-v1/20000/FEF2A74C-896A-E811-BB1B-0CC47A4C8E86.root'
-#'/store/user/tstreble/BToKee_Pythia/BToKee_Pythia_AODSIM_18_03_22/180321_162718/0000/BToKee_AODSIM_145.root'
-#'/store/data/Run2018A/ParkingBPH6/AOD/14May2018-v1/10002/FEB93B72-7558-E811-A97B-3417EBE528B5.root'
-#'/store/data/Run2018D/ParkingBPH5/AOD/PromptReco-v2/000/321/834/00000/FE1CD619-39AE-E811-9789-FA163EAA6035.root'
-#'/store/user/tstreble/BToKee_Pythia/BToKee_Pythia_AODSIM_18_03_22/180321_162718/0000/BToKee_AODSIM_107.root',
-#'/store/user/tstreble/BToKee_Pythia/BToKee_Pythia_AODSIM_18_03_22/180321_162718/0000/BToKee_AODSIM_108.root'
-  ),
-   secondaryFileNames=cms.untracked.vstring(
-),
-  # eventsToProcess=cms.untracked.VEventRange('317650:258:MIN-317650:308:MAX'),
-   inputCommands=cms.untracked.vstring(
-                  'keep *',
-                  'drop *_ctppsPixelClusters_*_*',
-                  
-          )
-
-)
+                            fileNames = cms.untracked.vstring(
+#data
+#'/store/data/Run2018B/ParkingBPH5/AOD/PromptReco-v1/000/317/650/00000/E216E20E-E06E-E811-8F13-FA163E15F06E.root'
+#mc
+'/store/mc/RunIIAutumn18DR/BuToK_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_102X_upgrade2018_realistic_v15-v3/90000/FF7DE4ED-3ED2-1040-BD7F-87729F17AE92.root'
+                            ),
+                            secondaryFileNames=cms.untracked.vstring(
+                            )
+                         )
 
 
 from PhysicsTools.SelectorUtils.tools.vid_id_tools import *
 dataFormat = DataFormat.AOD
 switchOnVIDElectronIdProducer(process, dataFormat)
 my_id_modules = [
-        'RecoEgamma.ElectronIdentification.Identification.cutBasedElectronID_Summer16_80X_V1_cff', 
- 'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_noIso_V1_cff', 
+   'RecoEgamma.ElectronIdentification.Identification.cutBasedElectronID_Summer16_80X_V1_cff', 
+   'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_noIso_V1_cff', 
    #   'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_iso_V1_cff', 
-
 ]
 for idmod in my_id_modules:
-    setupAllVIDIdsInModule(process,idmod,setupVIDElectronSelection)
-
+   setupAllVIDIdsInModule(process,idmod,setupVIDElectronSelection)
+   
 
 #For Run A
 #print "Obj ","hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered9Q","hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered9IP5Q","hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered7IP4Q","hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered8Q","hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered12Q"
@@ -87,110 +66,116 @@ print "Obj ","hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered9Q","hltL3fL1sMu22OrParkL1f
 print "path ","HLT_Mu9_IP6_part","HLT_Mu9_IP5","HLT_Mu7_IP4","HLT_Mu8_IP3","HLT_Mu12_IP6","empty"
 
 process.demo = cms.EDAnalyzer('SkimAnalyzerb',
-                              beamSpot = cms.InputTag('offlineBeamSpot'),
                               electrons    = cms.InputTag("gedGsfElectrons"),
+                              muons = cms.InputTag("muons::RECO"),
+                              tracks = cms.InputTag("generalTracks::RECO"),
                               vertices     = cms.InputTag("offlinePrimaryVertices"),
+                              beamSpot = cms.InputTag('offlineBeamSpot'),
                               conversions  = cms.InputTag('allConversions'),
+                              gen = cms.InputTag("genParticles::HLT"),
+                              clusters = cms.InputTag("particleFlowClusterECAL"),
                              
                               eleIdMapVeto = cms.InputTag("egmGsfElectronIDs:cutBasedElectronID-Summer16-80X-V1-veto"),
                               eleIdMapSoft = cms.InputTag("egmGsfElectronIDs:mvaEleID-Fall17-noIso-V1-wpLoose"),
                               eleIdMapMedium = cms.InputTag("egmGsfElectronIDs:mvaEleID-Fall17-noIso-V1-wp90"),
-                             eleIdMapTight = cms.InputTag("egmGsfElectronIDs:mvaEleID-Fall17-noIso-V1-wp80"),
+                              eleIdMapTight = cms.InputTag("egmGsfElectronIDs:mvaEleID-Fall17-noIso-V1-wp80"),
                               eleIdMapValue = cms.InputTag("electronMVAValueMapProducer:ElectronMVAEstimatorRun2Fall17NoIsoV1Categories"),
-#                           
-                              muonIdMap=cms.InputTag("muons","muidTM2DCompatibilityLoose","RECO"),
-                              #If you want no L1_Seed, write "default" in the first element and the tree will write the value -100
-# RUN A obj.
-#                               HLTFilter=cms.vstring("hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered9Q","hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered8p5Q","hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered10p5Q","hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered8Q","empty","empty"),
-# RUN B obj.
-                              HLTFilter=cms.vstring("hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered9Q","hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered9IP5Q","hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered7IP4Q","hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered8Q","hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered12Q","empty"),
-                          
-# RUN A Paths
-#                              HLTPath=cms.vstring("HLT_Mu9_IP6_part","HLT_Mu8p5_IP3p5","HLT_Mu10p5_IP3p5","HLT_Mu8_IP3","empty","empty"),
-# RUN B Paths
-                             HLTPath=cms.vstring("HLT_Mu9_IP6_part","HLT_Mu9_IP5","HLT_Mu7_IP4","HLT_Mu8_IP3","HLT_Mu12_IP6","empty"),
-#                             HLTPath=cms.vstring("HLT_Mu9_IP6_part","empty","empty","empty","empty","empty"),
-################################NORMALLY USE THIS####################### 
+
                               triggerresults = cms.InputTag("TriggerResults::HLT"),
                               triggerobjects = cms.InputTag('hltTriggerSummaryAOD','','HLT'),                   
+                              
+                              #muonIdMap = cms.InputTag("muons","muidTM2DCompatibilityLoose","RECO"),
 
-#############################NORMAL RUN###################
-                              muons=cms.InputTag("muons::RECO"),
-#  muons=cms.InputTag("muons::reRECO"),                          
-#########################NORMALLY USE THIS##################### 
-#                             gen=cms.InputTag("genParticles::GEN"),
-#########################ONLY FOR TTBAR-CMS AOD test#####################
-                              gen=cms.InputTag("genParticles::HLT"),
-##########################ONLY FOR TTBAR test up to here#####################
-#                            gen=cms.InputTag("genParticles::RECO"),
-############################FAST SIM SKATA###############################
-############################NORMAL ####################
-                               tracks=cms.InputTag("generalTracks::RECO"),
-# tracks=cms.InputTag("generalTracks"),
-#############################FAST SIM KOURADES
-#                              tracks=cms.InputTag("generalTracks::HLT"),
-                              clusters=cms.InputTag("particleFlowClusterECAL"),
-                               
-                               RunParameters = cms.PSet(
- 
-                   Data=cms.bool(IsData),SaveHLT=cms.bool(HLTsave),
-#general
-MuTrgMatchCone=cms.double(0.02),
-#single track related
-PtTrack_Cut=cms.double(0),EtaTrack_Cut=cms.double(2.5),TrackMuDz_Cut=cms.double(0.7),
-MinChi2Track_Cut=cms.double(0),MaxChi2Track_Cut=cms.double(1000),
-MuTrkMinDR_Cut=cms.double(0),TrackSdxy_Cut=cms.double(0),
-weight=cms.string("HLTAnalysis/TriggerAnalyzer/data/trk_only.xml"),
-TrgExclusionCone=cms.double(0.4),
-#object sepecific
-MuTrgExclusionCone=cms.double(0.4),ElTrgExclusionCone=cms.double(0.4),
-TrkObjExclusionCone=cms.double(0.02),PtEl_Cut=cms.double(0),
-PtMu_Cut=cms.double(0.0),QualMu_Cut=cms.double(0),MuTrgMuDz_Cut=cms.double(0.3),
-ElTrgMuDz_Cut=cms.double(0.3),
-#trkobj pair related
-MaxMee_Cut=cms.double(5),EpairZvtx_Cut=cms.double(1000),
-MinMee_Cut=cms.double(0),Cosee_Cut=cms.double(-10.99),
-Probee_Cut=cms.double(0.0000000000000000000000000000000001),
-MinMVA_Cut=cms.double(-10.4),MaxMVA_Cut=cms.double(-10.9),
-ObjPtLargerThanTrack=cms.bool(True),
-#triple track
-TrkTrkMinDR_Cut=cms.double(0.02),PtKTrack_Cut=cms.double(0.4),
-Ksdxy_Cut=cms.double(0),MaxMB_Cut=cms.double(6.0),MinMB_Cut=cms.double(3.5),
-SLxy_Cut=cms.double(4.0),ProbeeK_Cut=cms.double(0.001),CoseeK_Cut=cms.double(0.9),
-PtB_Cut=cms.double(5.0),
-#configuration
-SaveOnlyTracks=cms.bool(False),SaveOnlyEPairTracks=cms.bool(False),
-UseOnlyBKeeMCForTriplets=cms.bool(False),EarlyStop=cms.bool(False),
-SkipIfNoMuMatch=cms.bool(False)
+                              HLTFilter=cms.vstring("hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered9Q","hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered9IP5Q","hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered7IP4Q","hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered8Q","hltL3fL1sMu22OrParkL1f0L2f10QL3Filtered12Q","empty"),                          
+                              HLTPath=cms.vstring("HLT_Mu9_IP6_part","HLT_Mu9_IP5","HLT_Mu7_IP4","HLT_Mu8_IP3","HLT_Mu12_IP6","empty"),
+                              
+                              RunParameters = cms.PSet(                                 
+                                 Data = cms.bool(IsData), SaveHLT = cms.bool(HLTsave),
 
- )
-)
+                                 ##not really used
+                                 weight = cms.string("HLTAnalysis/TriggerAnalyzer/data/trk_only.xml"),
+                                 MinMVA_Cut = cms.double(-10.4), MaxMVA_Cut = cms.double(-10.9),
+                                 
+                                 #general
+                                 EtaTrack_Cut = cms.double(2.5), 
+
+                                 #muon
+                                 PtMu_Cut = cms.double(0.0), QualMu_Cut = cms.double(0), 
+                                 MuTrgMatchCone = cms.double(0.02),
+
+                                 #ele
+                                 PtEl_Cut = cms.double(0), 
+
+                                 #track
+                                 PtTrack_Cut = cms.double(0), 
+                                 MinChi2Track_Cut = cms.double(0), MaxChi2Track_Cut = cms.double(1000),
+                                 TrackSdxy_Cut = cms.double(0),
+
+                                 #track => look at the closest muon and if matched to the trigger
+                                 MuTrkMinDR_Cut = cms.double(0), 
+                                 TrackMuDz_Cut = cms.double(0.7),    #wrt reco muon matched to trigger muon
+                                 TrgExclusionCone = cms.double(0.4), #wrt trigger muon
+
+                                 #for triplet objects and tracks
+                                 TrkObjExclusionCone = cms.double(0.02),
+                                 ##if object is muon or ele
+                                 MuTrgExclusionCone = cms.double(0.4), ElTrgExclusionCone = cms.double(0.4),
+                                 MuTrgMuDz_Cut = cms.double(0.3), ElTrgMuDz_Cut = cms.double(0.3),
+                                 
+                                 #trkobj pair related
+                                 MaxMee_Cut = cms.double(5), MinMee_Cut = cms.double(0), 
+                                 #Probee_Cut = cms.double(0.0000000000000000000000000000000001),
+                                 Probee_Cut = cms.double(1.e-34),
+                                 EpairZvtx_Cut = cms.double(1000), #llvtx_z wrt trigger vtx_z
+                                 Cosee_Cut = cms.double(-10.99),
+
+                                 #triple track
+                                 PtKTrack_Cut = cms.double(0.4),
+                                 Ksdxy_Cut = cms.double(0),   #3rd track wrt PV
+                                 TrkTrkMinDR_Cut = cms.double(0.02), 
+
+                                 MaxMB_Cut = cms.double(6.0), 
+                                 MinMB_Cut = cms.double(3.5),
+                                 PtB_Cut = cms.double(5.0),
+                                 SLxy_Cut = cms.double(4.0), ProbeeK_Cut = cms.double(0.001), CoseeK_Cut = cms.double(0.9),
+
+                                 #configuration
+                                 SkipIfNoMuMatch = cms.bool(False),
+                                 SaveOnlyTracks = cms.bool(False),
+                                 UseOnlyBKeeMCForTriplets = cms.bool(False), 
+                                 ObjPtLargerThanTrack = cms.bool(True), 
+                                 SaveOnlyEPairTracks = cms.bool(False),                                 
+
+                                 EarlyStop = cms.bool(False)
+
+                              )
+                           )
 
 process.options = cms.untracked.PSet(
-    wantSummary = cms.untracked.bool(True),
-    #SkipEvent = cms.untracked.vstring('ProductNotFound')
+   wantSummary = cms.untracked.bool(True),
+   #SkipEvent = cms.untracked.vstring('ProductNotFound')
 )
 
 
 process.TFileService = cms.Service("TFileService",
                                    fileName = cms.string( "outputResHPt.root" )
-                                   )
+)
 process.fevt = cms.OutputModule("PoolOutputModule",
-   # SelectEvents = cms.untracked.PSet(SelectEvents = cms.vstring("path")),
-    outputCommands = cms.untracked.vstring(#"drop *",
-                                          # "keep *_*_*_Demo",
-                                         #  "keep *_offlineBeamSpot_*_*",
-                                         #  "keep *_offlinePrimaryVertices_*_*",
-                                         #  "keep *_offlinePrimaryVerticesWithBS_*_*",
-    ),
-    fileName = cms.untracked.string("edm_output.root"))
+                                # SelectEvents = cms.untracked.PSet(SelectEvents = cms.vstring("path")),
+                                outputCommands = cms.untracked.vstring(#"drop *",
+                                   # "keep *_*_*_Demo",
+                                   #  "keep *_offlineBeamSpot_*_*",
+                                   #  "keep *_offlinePrimaryVertices_*_*",
+                                   #  "keep *_offlinePrimaryVerticesWithBS_*_*",
+                                ),
+                                fileName = cms.untracked.string("edm_output.root")
+                             )
 
 #process.p = cms.Path(process.egmGsfElectronIDSequence)#* process.demo)
 #process.endjob=cms.EndPath(process.fevt)
 process.p = cms.Path(
    process.egmGsfElectronIDSequence   
    +process.demo
-  
 )   
    
 #process.p = cms.Path(process.demo)

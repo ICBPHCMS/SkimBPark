@@ -1,234 +1,17 @@
-// Package:    HLTAnalysis/SkimAnalyzer
-// Class:      TSkimanalyzer
-// 
-/*class SkimAnalyzer SkimAnalyzer.cc
- Description: [one line class summary]
-*/
-//
-// Original Author:
-//         george karathanasis, georgios.karathanasis@cern.ch
-//         Created:  Thu, 5 Nov 2018 17:40:23 GMT
-//
-//
-
-
-// system include files
 #include <memory>
 #include <iostream>
-// user include files
-#include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/one/EDAnalyzer.h"
-
-#include "FWCore/Framework/interface/Event.h"
-#include "DataFormats/Common/interface/Handle.h"
-#include "FWCore/Framework/interface/MakerMacros.h"
-#include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
-#include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
-#include "FWCore/ParameterSet/interface/ParameterSet.h"
-
-#include "DataFormats/PatCandidates/interface/Electron.h"
-#include "DataFormats/Common/interface/ValueMap.h"
-
-#include "DataFormats/PatCandidates/interface/VIDCutFlowResult.h"
-
-#include "DataFormats/VertexReco/interface/VertexFwd.h"
-#include "DataFormats/VertexReco/interface/Vertex.h"
-#include "DataFormats/EgammaCandidates/interface/ConversionFwd.h"
-#include "DataFormats/EgammaCandidates/interface/Conversion.h"
-#include "RecoEgamma/EgammaTools/interface/ConversionTools.h"
-
-#include "DataFormats/Common/interface/TriggerResults.h"
-#include "FWCore/Common/interface/TriggerNames.h"
-
-#include "FWCore/ServiceRegistry/interface/Service.h"
-#include "CommonTools/UtilAlgos/interface/TFileService.h"
+#include "HLTAnalysis/TriggerAnalyzer/plugins/SkimAnalyzer.h"
 
 
-#include "DataFormats/HLTReco/interface/TriggerEvent.h"
-#include "DataFormats/HLTReco/interface/TriggerObject.h"
-
-#include "HLTrigger/HLTcore/interface/defaultModuleLabel.h"
-#include "FWCore/PluginManager/interface/ModuleDef.h"
-
-#include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
-#include "DataFormats/EgammaCandidates/interface/GsfElectronFwd.h"
+float BuMass_ = 5.279;
+float KaonMass_ = 0.493677;
+float KaonStarMass_ = 0.89176; //nominal K*(892) mass 
+float PionMass_ = 0.139570;
+float MuonMass_ = 0.10565837;
+float ElectronMass_ = 0.5109989e-3;
 
 
-#include "DataFormats/RecoCandidate/interface/RecoEcalCandidate.h"
-#include "DataFormats/RecoCandidate/interface/RecoEcalCandidateIsolation.h"
-
-#include "DataFormats/RecoCandidate/interface/RecoChargedCandidate.h"
-#include "DataFormats/RecoCandidate/interface/RecoChargedCandidateIsolation.h"
-#include "DataFormats/Common/interface/AssociationMap.h"
-#include "HLTrigger/HLTcore/interface/HLTFilter.h"
-#include "HLTrigger/Egamma/plugins/HLTGenericFilter.h"
-#include "DataFormats/HLTReco/interface/TriggerFilterObjectWithRefs.h"
-#include "DataFormats/TrackReco/interface/Track.h"
-#include "DataFormats/MuonReco/interface/Muon.h"
-#include "FWCore/Common/interface/TriggerNames.h"
-#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
-#include "MagneticField/Engine/interface/MagneticField.h"
-#include "MagneticField/ParametrizedEngine/src/OAEParametrizedMagneticField.h"
-#include "TrackingTools/TransientTrack/interface/TransientTrack.h"
-#include "TrackingTools/IPTools/interface/IPTools.h"
-#include "RecoVertex/KalmanVertexFit/interface/KalmanVertexFitter.h"
-#include "L1Trigger/L1TNtuples/interface/MuonID.h"
-#include <vector>
-#include "TTree.h"
-#include <string>
-#include <iostream>
-#include "TMath.h"
-#include "DataFormats/Common/interface/Ref.h"
-#include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
-#include "DataFormats/TrackReco/interface/Track.h"
-#include "CommonTools/Statistics/interface/ChiSquaredProbability.h"
-#include "DataFormats/Candidate/interface/VertexCompositeCandidate.h"
-#include "TLorentzVector.h"
-#include "RecoVertex/KinematicFitPrimitives/interface/ParticleMass.h"
-#include "RecoVertex/KinematicFitPrimitives/interface/MultiTrackKinematicConstraint.h"
-#include "RecoVertex/KinematicFit/interface/CombinedKinematicConstraint.h"
-#include <RecoVertex/KinematicFitPrimitives/interface/KinematicParticleFactoryFromTransientTrack.h>
-#include "RecoVertex/KinematicFit/interface/KinematicConstrainedVertexFitter.h"
-#include "RecoVertex/KinematicFit/interface/TwoTrackMassKinematicConstraint.h"
-#include "RecoVertex/KinematicFit/interface/KinematicParticleVertexFitter.h"
-#include "RecoVertex/KinematicFit/interface/KinematicParticleFitter.h"
-#include "RecoVertex/KinematicFit/interface/MassKinematicConstraint.h"
-#include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
-#include "TrackingTools/Records/interface/TransientTrackRecord.h"
-#include "RecoVertex/KinematicFit/interface/MultiTrackPointingKinematicConstraint.h"
-#include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
-#include "Epropagation.h"
-#include "MVAReader.h"
-
-
-
-
-using namespace std;
-
-
-template<typename T1>
-class SkimAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
-
-  typedef std::vector<T1> T1Collection;
-  typedef edm::Ref<T1Collection> T1Ref;
-  typedef edm::AssociationMap<edm::OneToValue<std::vector<T1>, float > > T1IsolationMap;
-
-public:
-  explicit SkimAnalyzer(const edm::ParameterSet&);
-  ~SkimAnalyzer();
-  
-  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
-  
-  
-private:
-  virtual void beginJob() override;
-  virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
-  virtual void endJob() override;
-  float Dphi(float phi1,float phi2);
-  float DR(float eta1,float phi1,float eta2, float phi2);
-  std::pair<std::vector<float>, std::vector<std::vector<std::vector<float> > > > HLTAnalyze(const edm::Event& iEvent, 
-											    const edm::EventSetup& iSetup,
-											    std::vector<std::string> HLTPath,
-											    std::vector<std::string> Seed );
-
-  std::vector<std::vector<float> > genAnalyze(const edm::Event& iEvent, const edm::EventSetup& iSetup);
-  
-  std::vector<float> SelectTrg_Object(std::vector<std::vector<float> > &tr1, std::vector<std::vector<float> > &tr2, 
-				      std::vector<std::vector<float> > &tr3, std::vector<std::vector<float> > &tr4,
-				      std::vector<std::vector<float> > &tr5, std::vector<std::vector<float> > &tr6);
-  std::vector<float> SimulateTrigger(std::vector<float> & genMu_pt, std::vector<float> & genMu_eta,
-				     std::vector<float> & genMu_phi, std::vector<float> & genMu_ch);
-  std::vector<std::vector<float> > genMuAnalyze(const edm::Event& iEvent, const edm::EventSetup& iSetup);
-
-  edm::EDGetToken electronsToken_;
-  edm::EDGetToken muonsToken_;
-  edm::EDGetToken Tracks_;
-  edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
-  edm::EDGetTokenT<reco::BeamSpot> beamSpotToken_;
-  edm::EDGetTokenT<reco::ConversionCollection> conversionsToken_;
-  edm::EDGetTokenT<edm::ValueMap<bool> > eleIdMapVetoToken_;
-  edm::EDGetTokenT<edm::ValueMap<bool> > eleIdMapSoftToken_;
-  edm::EDGetTokenT<edm::ValueMap<bool> > eleIdMapMediumToken_;
-  edm::EDGetTokenT<edm::ValueMap<bool> > eleIdMapTightToken_;
-  edm::EDGetTokenT<edm::ValueMap<int> > eleIdMapValueToken_;
-  edm::EDGetTokenT<edm::TriggerResults> trgresultsToken_; 
-  edm::EDGetTokenT<trigger::TriggerEvent> trigobjectsToken_;
-  vector<string> HLTFilter_;
-  vector<string> HLTPath_;
-  edm::EDGetToken GenToken_;
-  edm::EDGetTokenT<reco::PFClusterCollection> clusters_;
-
-  MVAReader bdt;
-
-  TTree * t1;
-  edm::Service<TFileService> fs;
-
-  std::vector<float> muon_pt,muon_eta,muon_phi,muon_qual,muon_charge,muon_dxy,
-  muon_dz,muon_edxy,muon_edz,muon_d0,muon_ed0,muon_vx,muon_vz,muon_vy,muon_iso,
-  muon_trkpt,muon_trketa,muon_trkphi;
-  std::vector<bool> muon_medium,muon_loose,muon_tight,muon_soft;
-  
-  std::vector<float> el_pt, el_eta, el_phi, el_charge, el_vx, el_vy, el_vz, el_dxy,
-    el_dz, el_edxy, el_edz, el_mva_out, el_mva_iso, el_iso, el_mva_map_value, el_trkpt,
-    el_trketa, el_trkphi;
-  std::vector<bool> el_veto, el_soft, el_medium, el_tight; 
-
-  std::vector<float> vertex_x,vertex_y,vertex_z; float beam_x,beam_y,beam_z; 
-  std::vector<float> track_pt,track_eta,track_phi,track_norm_chi2,track_charge,track_dxy,track_dz,track_edxy,track_edz,track_mva;
-  std::vector<bool> track_MuCleaned;
-  std::vector<std::vector<float> > TTrack_PtEtaPhiM, TTrack_XYZ;
-  std::vector<float> TTrack_chi_prob,TTrack_ObjIndex,TTrack_TrkIndex,TTrack_kid,TTrack_mll,TTrack_cos,TTrack_Lxy,TTrack_eLxy;
-  std::vector<std::vector<float> > Epair_PtEtaPhiM, Epair_XYZ; 
-  std::vector<float> Epair_cos,Epair_chi_prob,Epair_ObjIndex,Epair_TrkIndex,Epair_Lxy,Epair_eLxy;
- 
-    std::vector<float>  genpart_pt,genpart_phi,genpart_eta,genpart_pdgId,genpart_charge,genpart_Bindex,genpart_Daughtindex,genpart_mother_pt,genpart_mother_eta,genpart_mother_phi,genpart_mother_pdgId,genpart_mother_Bindex,genpart_mother_Daughtindex,genpart_grandmother_pt,genpart_grandmother_eta,genpart_grandmother_phi,genpart_grandmother_pdgId,genpart_grandmother_Bindex,genpart_grandmother_x,genpart_grandmother_y,genpart_grandmother_z;
-  std::vector<float> genMu_pt,genMu_eta,genMu_phi,genMu_ch,genMu_motherId,genMu_gmotherId;
-  std::vector<float> track_vx,track_vy,track_vz;
-  std::vector<std::vector<float>> TrgObj1_PtEtaPhiCharge,TrgObj2_PtEtaPhiCharge,TrgObj3_PtEtaPhiCharge,TrgObj4_PtEtaPhiCharge,TrgObj5_PtEtaPhiCharge,TrgObj6_PtEtaPhiCharge;
-  std::vector<float> SelectedTrgObj_PtEtaPhiCharge; int SelectedMu_index;
-  std::vector<unsigned int> Epair_ObjId,TTrack_ObjId;
-  float SelectedMu_DR;
-  int trigger1=0,trigger2=0,trigger3=0,trigger4=0,trigger5=0,trigger6=0;
-  unsigned int nel=0,nmuons=0,ntracks=0,event=0,run_number=0,ls=0;
-
-  //options
-  bool IsData = true, SaveHLT = true;
-  double PtTrack_Cut = 0; double EtaTrack_Cut = 10; double MinChi2Track_Cut = -1000; 
-  double MaxChi2Track_Cut = 1000; double MuTrkMinDR_Cut = 0; double MaxMee_Cut = 1000;
-  double PtKTrack_Cut = 0; 
-  double MaxMB_Cut = 1000; double MinMB_Cut = 0; double TrkTrkMinDR_Cut = 10000;
-  bool SaveOnlyTracks = false; bool SaveOnlyEPairTracks = false;
-  double TrackSdxy_Cut = 0; bool UseOnlyBKeeMCForTriplets = false;
-  double MinMee_Cut = 0; double  Probee_Cut=0; double Cosee_Cut=-1;
-
-  bool EarlyStop = false; double MuTrgMatchCone = 1000; bool SkipIfNoMuMatch = false;
-  double EpairZvtx_Cut=10000000; double Ksdxy_Cut=1000; double ProbeeK_Cut=0;
-  double CoseeK_Cut=0; double TrackMuDz_Cut=100000000; double MaxMVA_Cut=-1000;
-  double MinMVA_Cut=-1000; double TrgExclusionCone=-1; double SLxy_Cut=0;
-  double PtB_Cut=0; double PtMu_Cut=0; double QualMu_Cut=0; double PtEl_Cut=0;
-  double MuTrgExclusionCone=0; double ElTrgExclusionCone=0; 
-  double TrkObjExclusionCone=0; double MuTrgMuDz_Cut=1000; 
-  double ElTrgMuDz_Cut=1000; bool ObjPtLargerThanTrack=false;
-  
-  //  internal stuff
-  float ZvertexTrg = -100000000; unsigned int trk_index = 0;
-  std::vector<std::vector<float>> genparts; std::vector<std::vector<float>> genmu;
-  std::vector<reco::TransientTrack> tempTracks;  std::vector<float> tempPtEtaPhiM,tempXYZ;
-  std::vector<std::shared_ptr<reco::Track>> cleanedObjTracks;
-  std::vector<std::shared_ptr<reco::Track>> cleanedPairTracks;
-  std::vector<unsigned int> trackObj_container,trackPair_container;
-  int mutemp = 0;
-
-  //bdt
-  float trk_pt; float trk_eta; float trk_phi; float trk_p; float trk_charge;
-  float trk_nhits; float trk_high_purity; float trk_inp; float trk_outp;
-  float trk_chi2red; float preid_trk_ecal_Deta; float preid_trk_ecal_Dphi;
-  float preid_e_over_p; std::string weights; 
- };
-
-
-template<typename T1>
-SkimAnalyzer<T1>::SkimAnalyzer(const edm::ParameterSet& iConfig):  
+SkimAnalyzer::SkimAnalyzer(const edm::ParameterSet& iConfig):  
   electronsToken_(consumes<edm::View<reco::GsfElectron> >(iConfig.getParameter<edm::InputTag>  ("electrons"))),
   muonsToken_(consumes<std::vector<reco::Muon>>(iConfig.getParameter<edm::InputTag>("muons"))),
   Tracks_(consumes<std::vector<reco::Track> >(iConfig.getParameter<edm::InputTag>("tracks"))),
@@ -249,64 +32,82 @@ SkimAnalyzer<T1>::SkimAnalyzer(const edm::ParameterSet& iConfig):
   //runParameters(iConfig.getParameter<edm::ParameterSet>("RunParameters"))
   
 {
+  debugCOUT = false;
+
   edm::ParameterSet runParameters = iConfig.getParameter<edm::ParameterSet>("RunParameters");     
   IsData = runParameters.getParameter<bool>("Data");
   SaveHLT = runParameters.getParameter<bool>("SaveHLT");
+  LeptonFinalStateID = runParameters.getParameter<int>("LeptonFinalStateID");
+  isKll = runParameters.getParameter<bool>("IsKll");
 
   MuTrgMatchCone = runParameters.getParameter<double>("MuTrgMatchCone");
 
   PtTrack_Cut = runParameters.getParameter<double>("PtTrack_Cut");
   EtaTrack_Cut = runParameters.getParameter<double>("EtaTrack_Cut");
-  //cout<<PtTrack_Cut<<endl;
-  MinChi2Track_Cut=runParameters.getParameter<double>("MinChi2Track_Cut");
-  MaxChi2Track_Cut=runParameters.getParameter<double>("MaxChi2Track_Cut");
-  MuTrkMinDR_Cut=runParameters.getParameter<double>("MuTrkMinDR_Cut");
+  MaxChi2Track_Cut = runParameters.getParameter<double>("MaxChi2Track_Cut");
+  MinChi2Track_Cut = runParameters.getParameter<double>("MinChi2Track_Cut");
+  TrackSdxy_Cut = runParameters.getParameter<double>("TrackSdxy_Cut");
 
-  MaxMee_Cut=runParameters.getParameter<double>("MaxMee_Cut");
-  MinMee_Cut=runParameters.getParameter<double>("MinMee_Cut");
-  Probee_Cut=runParameters.getParameter<double>("Probee_Cut");
-  Cosee_Cut=runParameters.getParameter<double>("Cosee_Cut");
+  ObjPtLargerThanTrack = runParameters.getParameter<bool>("ObjPtLargerThanTrack"); 
+  MaxMee_Cut = runParameters.getParameter<double>("MaxMee_Cut");
+  MinMee_Cut = runParameters.getParameter<double>("MinMee_Cut");
+  Probee_Cut = runParameters.getParameter<double>("Probee_Cut");
+  Cosee_Cut = runParameters.getParameter<double>("Cosee_Cut");
+  EpairZvtx_Cut = runParameters.getParameter<double>("EpairZvtx_Cut");
   
- PtKTrack_Cut=runParameters.getParameter<double>("PtKTrack_Cut");
- MaxMB_Cut=runParameters.getParameter<double>("MaxMB_Cut");
- MinMB_Cut=runParameters.getParameter<double>("MinMB_Cut");
- TrkTrkMinDR_Cut=runParameters.getParameter<double>("TrkTrkMinDR_Cut");
- SaveOnlyTracks=runParameters.getParameter<bool>("SaveOnlyTracks");
- SaveOnlyEPairTracks=runParameters.getParameter<bool>("SaveOnlyEPairTracks");
- UseOnlyBKeeMCForTriplets=runParameters.getParameter<bool>("UseOnlyBKeeMCForTriplets");
- TrackSdxy_Cut=runParameters.getParameter<double>("TrackSdxy_Cut");
- EarlyStop=runParameters.getParameter<bool>("EarlyStop");
+  MaxMB_Cut = runParameters.getParameter<double>("MaxMB_Cut");
+  MinMB_Cut = runParameters.getParameter<double>("MinMB_Cut");
+  PtB_Cut = runParameters.getParameter<double>("PtB_Cut");
+  SLxy_Cut = runParameters.getParameter<double>("SLxy_Cut");
+  ProbeeK_Cut = runParameters.getParameter<double>("ProbeeK_Cut");
+  CoseeK_Cut = runParameters.getParameter<double>("CoseeK_Cut");
+  Ksdxy_Cut = runParameters.getParameter<double>("Ksdxy_Cut");
 
- SkipIfNoMuMatch=runParameters.getParameter<bool>("SkipIfNoMuMatch");
- EpairZvtx_Cut=runParameters.getParameter<double>("EpairZvtx_Cut");
- Ksdxy_Cut=runParameters.getParameter<double>("Ksdxy_Cut");
- ProbeeK_Cut=runParameters.getParameter<double>("ProbeeK_Cut");
- CoseeK_Cut=runParameters.getParameter<double>("CoseeK_Cut");
- TrackMuDz_Cut=runParameters.getParameter<double>("TrackMuDz_Cut");
- weights=runParameters.getParameter<string>("weight");
- MaxMVA_Cut=runParameters.getParameter<double>("MaxMVA_Cut");
- MinMVA_Cut=runParameters.getParameter<double>("MinMVA_Cut");
- TrgExclusionCone=runParameters.getParameter<double>("TrgExclusionCone");
- SLxy_Cut=runParameters.getParameter<double>("SLxy_Cut");
- PtB_Cut=runParameters.getParameter<double>("PtB_Cut");
- PtMu_Cut=runParameters.getParameter<double>("PtMu_Cut");
-  PtEl_Cut=runParameters.getParameter<double>("PtEl_Cut");
- QualMu_Cut=runParameters.getParameter<double>("QualMu_Cut");
- MuTrgExclusionCone=runParameters.getParameter<double>("MuTrgExclusionCone");
- ElTrgExclusionCone=runParameters.getParameter<double>("ElTrgExclusionCone");
- TrkObjExclusionCone=runParameters.getParameter<double>("TrkObjExclusionCone");
- MuTrgMuDz_Cut=runParameters.getParameter<double>("MuTrgMuDz_Cut");
- ElTrgMuDz_Cut=runParameters.getParameter<double>("ElTrgMuDz_Cut"); 
- ObjPtLargerThanTrack=runParameters.getParameter<bool>("ObjPtLargerThanTrack"); 
- bdt.SetWeight(weights);  
-  t1=fs->make<TTree>("mytree","mytree"); 
+  PtMu_Cut = runParameters.getParameter<double>("PtMu_Cut");
+  QualMu_Cut = runParameters.getParameter<double>("QualMu_Cut");
+  PtEl_Cut = runParameters.getParameter<double>("PtEl_Cut");
+  PtKTrack_Cut = runParameters.getParameter<double>("PtKTrack_Cut");
+
+
+  MuTrgMuDz_Cut = runParameters.getParameter<double>("MuTrgMuDz_Cut");
+  ElTrgMuDz_Cut = runParameters.getParameter<double>("ElTrgMuDz_Cut"); 
+  TrkTrgMuDz_Cut = runParameters.getParameter<double>("TrackMuDz_Cut");
+
+  MuTrgExclusionCone = runParameters.getParameter<double>("MuTrgExclusionCone");
+  ElTrgExclusionCone = runParameters.getParameter<double>("ElTrgExclusionCone");
+  TrkTrgExclusionCone = runParameters.getParameter<double>("TrkTrgExclusionCone");
+
+  TrkObjExclusionCone = runParameters.getParameter<double>("TrkObjExclusionCone"); 
+  //   MuTrkMinDR_Cut = runParameters.getParameter<double>("MuTrkMinDR_Cut");
+  //   TrkTrkMinDR_Cut = runParameters.getParameter<double>("TrkTrkMinDR_Cut");
+
+
+
+  SaveOnlyTracks = runParameters.getParameter<bool>("SaveOnlyTracks");
+  SaveOnlyEPairTracks = runParameters.getParameter<bool>("SaveOnlyEPairTracks");
+  UseOnlyBKeeMCForTriplets = runParameters.getParameter<bool>("UseOnlyBKeeMCForTriplets");
+  EarlyStop = runParameters.getParameter<bool>("EarlyStop");
+  SkipIfNoMuMatch = runParameters.getParameter<bool>("SkipIfNoMuMatch");
+
+  /*
+  weights=runParameters.getParameter<string>("weight");
+  MaxMVA_Cut=runParameters.getParameter<double>("MaxMVA_Cut");
+  MinMVA_Cut=runParameters.getParameter<double>("MinMVA_Cut");
+
+  bdt.SetWeight(weights);  
+  */
+  
+  t1 = fs->make<TTree>("mytree","mytree"); 
   t1->Branch("event",&event);
   t1->Branch("run_number",&run_number);
   t1->Branch("ls",&ls);
   
-  t1->Branch("vertex_x",&vertex_x); t1->Branch("vertex_y",&vertex_y);
-  t1->Branch("vertex_z",&vertex_z); t1->Branch("beam_x",&beam_x);
-  t1->Branch("beam_y",&beam_y); t1->Branch("beam_z",&beam_z);
+  t1->Branch("vertex_x",&vertex_x); 
+  t1->Branch("vertex_y",&vertex_y);
+  t1->Branch("vertex_z",&vertex_z); 
+  t1->Branch("beam_x",&beam_x);
+  t1->Branch("beam_y",&beam_y); 
+  t1->Branch("beam_z",&beam_z);
 
   t1->Branch("HLT_path1",&trigger1); t1->Branch("HLT_path2",&trigger2);
   t1->Branch("HLT_path3",&trigger3); t1->Branch("HLT_path4",&trigger4);
@@ -318,9 +119,9 @@ SkimAnalyzer<T1>::SkimAnalyzer(const edm::ParameterSet& iConfig):
   t1->Branch("TrgObj5_PtEtaPhiCharge",&TrgObj5_PtEtaPhiCharge);
   t1->Branch("TrgObj6_PtEtaPhiCharge",&TrgObj6_PtEtaPhiCharge);
   t1->Branch("SelectedTrgObj_PtEtaPhiCharge",&SelectedTrgObj_PtEtaPhiCharge);
+
   t1->Branch("SelectedMu_index",&SelectedMu_index);
   t1->Branch("SelectedMu_DR",&SelectedMu_DR);
-
    
   t1->Branch("nmuon",&nmuons); t1->Branch("muon_pt",&muon_pt);
   t1->Branch("muon_eta",&muon_eta); t1->Branch("muon_phi",&muon_phi);
@@ -334,7 +135,7 @@ SkimAnalyzer<T1>::SkimAnalyzer(const edm::ParameterSet& iConfig):
   t1->Branch("muon_tight",&muon_tight);t1->Branch("muon_trkpt",&muon_trkpt); 
   t1->Branch("muon_trketa",&muon_trketa);t1->Branch("muon_trkphi",&muon_trkphi);
   
-  t1->Branch("nelectron",&nel); t1->Branch("el_pt",&el_pt);
+  t1->Branch("nelectron",&nelectron); t1->Branch("el_pt",&el_pt);
   t1->Branch("el_eta",&el_eta); t1->Branch("el_phi",&el_phi);
   t1->Branch("el_charge",&el_charge); t1->Branch("el_dxy",&el_dxy);
   t1->Branch("el_dz",&el_dz); t1->Branch("el_edxy",&el_edxy);
@@ -346,27 +147,31 @@ SkimAnalyzer<T1>::SkimAnalyzer(const edm::ParameterSet& iConfig):
   t1->Branch("el_tight",&el_tight); t1->Branch("el_mva_map_value",&el_mva_map_value);
   t1->Branch("el_trkpt",&el_trkpt); t1->Branch("el_trketa",&el_trketa); 
   t1->Branch("el_trkphi",&el_trkphi);
-  
 
-  t1->Branch("genpart_pt",&genpart_pt); t1->Branch("genpart_phi",&genpart_phi);
-  t1->Branch("genpart_eta",&genpart_eta); t1->Branch("genpart_pdgId",&genpart_pdgId);
-  t1->Branch("genpart_Bindex",&genpart_Bindex);
-  t1->Branch("genpart_Daughtindex",&genpart_Daughtindex);
-  t1->Branch("genpart_charge",&genpart_charge);
-  t1->Branch("genpart_mother_pdgId",&genpart_mother_pdgId);
-  t1->Branch("genpart_mother_pt",&genpart_mother_pt);
-  t1->Branch("genpart_mother_phi",&genpart_mother_phi);
-  t1->Branch("genpart_mother_eta",&genpart_mother_eta);
-  t1->Branch("genpart_mother_Bindex",&genpart_mother_Bindex);
-  t1->Branch("genpart_mother_Daughtindex",&genpart_mother_Daughtindex);
-  t1->Branch("genpart_grandmother_pdgId",&genpart_grandmother_pdgId);
-  t1->Branch("genpart_grandmother_pt",&genpart_grandmother_pt);
-  t1->Branch("genpart_grandmother_phi",&genpart_grandmother_phi);
-  t1->Branch("genpart_grandmother_eta",&genpart_grandmother_eta);
-  t1->Branch("genpart_grandmother_Bindex",&genpart_grandmother_Bindex);
-  t1->Branch("genpart_grandmother_x",&genpart_grandmother_x);
-  t1->Branch("genpart_grandmother_y",&genpart_grandmother_y);
-  t1->Branch("genpart_grandmother_z",&genpart_grandmother_z);
+
+  t1->Branch("genpart_B_index", &genpart_B_index);
+  t1->Branch("genpart_lep1FromB_index", &genpart_lep1FromB_index);
+  t1->Branch("genpart_lep2FromB_index", &genpart_lep2FromB_index);
+  t1->Branch("genpart_KFromB_index", &genpart_KFromB_index);
+  t1->Branch("genpart_KstFromB_index", &genpart_KstFromB_index);
+  t1->Branch("genpart_KFromKst_index", &genpart_KFromKst_index);
+  t1->Branch("genpart_PiFromKst_index", &genpart_PiFromKst_index);
+
+  t1->Branch("genpart_B_pdg", &genpart_B_pdg);
+  t1->Branch("genpart_lep1FromB_pdg", &genpart_lep1FromB_pdg);
+  t1->Branch("genpart_lep2FromB_pdg", &genpart_lep2FromB_pdg);
+  t1->Branch("genpart_KFromB_pdg", &genpart_KFromB_pdg);
+  t1->Branch("genpart_KstFromB_pdg", &genpart_KstFromB_pdg);
+  t1->Branch("genpart_KFromKst_pdg", &genpart_KFromKst_pdg);
+  t1->Branch("genpart_PiFromKst_pdg", &genpart_PiFromKst_pdg);
+
+  t1->Branch("genpart_B_PtEtaPhiM", &genpart_B_PtEtaPhiM);
+  t1->Branch("genpart_lep1_PtEtaPhiM", &genpart_lep1_PtEtaPhiM);
+  t1->Branch("genpart_lep2_PtEtaPhiM", &genpart_lep2_PtEtaPhiM);
+  t1->Branch("genpart_K_PtEtaPhiM", &genpart_K_PtEtaPhiM);
+  t1->Branch("genpart_Kst_PtEtaPhiM", &genpart_Kst_PtEtaPhiM);
+  t1->Branch("genpart_Pi_PtEtaPhiM", &genpart_Pi_PtEtaPhiM);
+  
   t1->Branch("genMu_pt",&genMu_pt);  t1->Branch("genMu_eta",&genMu_eta);
   t1->Branch("genMu_phi",&genMu_phi);  t1->Branch("genMu_ch",&genMu_ch);
   t1->Branch("genMu_motherId",&genMu_motherId);  t1->Branch("genMu_gmotherId",&genMu_gmotherId);
@@ -398,8 +203,7 @@ SkimAnalyzer<T1>::SkimAnalyzer(const edm::ParameterSet& iConfig):
 }
 
 
-template<typename T1>
-SkimAnalyzer<T1>::~SkimAnalyzer()
+SkimAnalyzer::~SkimAnalyzer()
 {
   // cout<<"total "<<trg_counter<<" fires "<<fire_counter<<" l3 "<<l3_counter<<endl;
    // do anything here that needs to be done at desctruction time
@@ -410,113 +214,223 @@ SkimAnalyzer<T1>::~SkimAnalyzer()
 }
 
 
-//
-// member functions
-//
-
-// ------------ method called for each event  ------------
-template<typename T1>
-std::vector<std::vector<float>> SkimAnalyzer<T1>::genAnalyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
+void SkimAnalyzer::genAnalyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
   using namespace std;
   using namespace edm;
   using namespace reco;
   using namespace trigger;
-  //  cout<<" new event"<<endl;
-  edm::Handle<edm::View<reco::GenParticle>> genPart;
+
+  edm::Handle<edm::View<reco::GenParticle> > genPart;
   iEvent.getByToken(GenToken_,genPart);
 
-  std::vector<float> temp_genpart_pt,temp_genpart_phi,temp_genpart_eta,
-  temp_genpart_pdgId,temp_genpart_charge,temp_genpart_Bindex,
-  temp_genpart_Daughtindex,temp_genpart_mother_pt,temp_genpart_mother_eta,
-  temp_genpart_mother_phi,temp_genpart_mother_pdgId,temp_genpart_mother_Bindex,
-  temp_genpart_mother_Daughtindex,temp_genpart_grandmother_pt,
-  temp_genpart_grandmother_eta,temp_genpart_grandmother_phi,
-  temp_genpart_grandmother_pdgId,temp_genpart_grandmother_Bindex,
-  temp_genpart_grandmother_x,temp_genpart_grandmother_y,temp_genpart_grandmother_z;
-  int c = 0;
+  //LeptonFinalStateID
+  int nGenPart = genPart->size();
+  
+  if(debugCOUT) std::cout << " \n new event " << std::endl;
 
-  for(typename edm::View<reco::GenParticle>::const_iterator gen=genPart->begin(); gen !=genPart->end(); gen++){
-    if (abs(gen->pdgId()) != 11 && abs(gen->pdgId()) != 13) continue;
-    if (gen->status() != 1) continue;
-    if (gen->numberOfMothers() == 0) continue;
 
-    const Candidate* mother2 = gen->mother();
-    if (mother2->numberOfMothers() == 0) continue;
-    const Candidate * grandmother2 = mother2->mother();
-    if ( (mother2->pdgId() % 1000)/100 != 5 && (mother2->pdgId() % 10000)/1000 != 5 &&  
-	 (mother2->pdgId() % 1000)/100 != -5  && (mother2->pdgId() % 10000)/1000 != -5  && 
-	 (grandmother2->pdgId() % 1000)/100 != 5 && (grandmother2->pdgId() % 10000)/1000 != 5 &&  
-	 (grandmother2->pdgId() % 1000)/100 != -5  && (grandmother2->pdgId() % 10000)/1000 != -5 ) continue;    
-
-    //std::cout << " genAnalyze mother pdg = " << mother2->pdgId() << " grandM pdg = " << grandmother2->pdgId() << std::endl;
-
-    c++;
-    const Candidate * temp_gmom;
-    if ( (mother2->pdgId() % 1000)/100 == 5 || (mother2->pdgId() % 10000)/1000 == 5 || (mother2->pdgId() % 1000)/100 == -5 || (mother2->pdgId() % 10000)/1000 == -5) 
-      temp_gmom = gen->mother();
-    else
-      temp_gmom = mother2->mother();
+  for(int i_Bu=0; i_Bu<nGenPart; ++i_Bu){
+    genpart_B_index = -1;
+    genpart_lep1FromB_index = -1;
+    genpart_lep2FromB_index = -1;
+    genpart_KFromB_index = -1;
+    genpart_KstFromB_index = -1;
+    genpart_KFromKst_index = -1;
+    genpart_PiFromKst_index = -1;
     
-    //check for double B due to two e or mu  
-    bool already_saved = false;
-    for(unsigned int doubleB=0; doubleB<temp_genpart_grandmother_pdgId.size(); doubleB++){
-      if (temp_gmom->pdgId() == temp_genpart_grandmother_pdgId.at(doubleB) && temp_gmom->pt() == temp_genpart_grandmother_pt.at(doubleB) && 
-	  temp_gmom->eta() == temp_genpart_grandmother_eta.at(doubleB) && temp_gmom->phi() == temp_genpart_grandmother_phi.at(doubleB)) 
-	already_saved = true; 
-    }
-    if (already_saved){ /*cout<<"skip,no saving"<<endl;*/ continue;}
-    //else cout<<"saving"<<endl;
+    if(abs((*genPart)[i_Bu].pdgId()) == 521){
+      int  nD = (*genPart)[i_Bu].numberOfDaughters();
+      
+      if(debugCOUT) std::cout << " found a B " << " isKll = " << isKll << " nDaug = " << nD << std::endl;
+
+      if(isKll){
+	if(nD < 3) continue;
+	genpart_B_index = i_Bu;
+
+	for(auto iD=0; iD < nD; ++iD){
+	  const Candidate* daug = (*genPart)[i_Bu].daughter(iD);
+	  
+	  int pdgId = daug->pdgId();
+	  float partPt = daug->pt();
+	  float partEta = daug->eta();
+      
+	  if(debugCOUT) std::cout << " daug " << iD << " pdgID = " << pdgId << " pt = " << partPt << " eta = " << partEta << std::endl;
+
+	  if(partPt < 0.5) continue;
+	  if(std::abs(partEta) > 2.4) continue;
+	  
+	  if(abs(pdgId) == LeptonFinalStateID && genpart_lep1FromB_index < 0)
+	    genpart_lep1FromB_index = iD;
+	  else if(abs(pdgId) == LeptonFinalStateID)
+	    genpart_lep2FromB_index = iD;
+	  else if(abs(pdgId) == 321)
+	    genpart_KFromB_index = iD;
+	  else if (abs(pdgId) == 22) continue;
+	  else {
+	    genpart_lep1FromB_index = -1;
+	    genpart_lep2FromB_index = -1;
+	    genpart_KFromB_index = -1;
+	    break;
+	  }
+	}//daug
+	if(genpart_lep1FromB_index >= 0 && genpart_lep2FromB_index >= 0 && genpart_KFromB_index >= 0) {
+	  if(debugCOUT) std::cout << " found B -> K decay " << std::endl;
+	  break;
+	}
+	else{
+	  genpart_B_index = -1;
+	  genpart_lep1FromB_index = -1;
+	  genpart_lep2FromB_index = -1;
+	  genpart_KFromB_index = -1;
+	}
+      }//isKll
+      if(!isKll){
+	if(nD < 3) continue;
+	genpart_B_index = i_Bu;
+	
+	for(auto iD=0; iD < nD; ++iD){
+	  const Candidate* daug = (*genPart)[i_Bu].daughter(iD);
+	  
+	  int pdgId = daug->pdgId();
+	  float partPt = daug->pt();
+	  float partEta = daug->eta();
+	  
+	  if(partPt < 0.5) continue;
+	  if(std::abs(partEta) > 2.4) continue;
+	  
+	  if(abs(pdgId) == LeptonFinalStateID && genpart_lep1FromB_index < 0)
+	    genpart_lep1FromB_index = iD;
+	  else if(abs(pdgId) == LeptonFinalStateID)
+	    genpart_lep2FromB_index = iD;
+	  else if(abs(pdgId) == 323){
+	    int  ngD = daug->numberOfDaughters();
+	    
+	    if(ngD < 2) continue;
+	    genpart_KstFromB_index = iD;
+	    
+	    for(auto igD=0; igD < ngD; ++igD){
+	      const Candidate* gDaug = daug->daughter(igD);
+	      
+	      int pdgId_gd = gDaug->pdgId();
+	      float partPt_gd = gDaug->pt();
+	      float partEta_gd = gDaug->eta();
+	      
+	      if(partPt_gd < 0.5) continue;
+	      if(std::abs(partEta_gd) > 2.4) continue;
+	      
+	      if(abs(pdgId_gd) == 321) 
+	      genpart_KFromKst_index = igD;
+	      else if(abs(pdgId_gd) == 211)
+		genpart_PiFromKst_index = igD;
+	      else if (abs(pdgId_gd) == 22) continue;
+	      else{
+		genpart_KstFromB_index = -1;
+		genpart_KFromKst_index = -1;
+		genpart_PiFromKst_index = -1;
+		break;
+	      }
+	    } //loop over  K*
+	  }
+	  else if (abs(pdgId) == 22) continue;
+	  else {
+	    genpart_lep1FromB_index = -1;
+	    genpart_lep2FromB_index = -1;
+	    genpart_KstFromB_index = -1;
+	    genpart_KFromKst_index = -1;
+	    genpart_PiFromKst_index = -1;
+	    break;
+	  }
+	}//daug
+	if(genpart_KFromKst_index != -1 && genpart_PiFromKst_index != -1 && genpart_lep1FromB_index != -1 && genpart_lep2FromB_index != -1) {
+	  if(debugCOUT) std::cout << " found B -> K* decay " << std::endl;
+	  break;
+	}
+	else{
+	  genpart_B_index = -1;
+	  genpart_lep1FromB_index = -1;
+	  genpart_lep2FromB_index = -1;
+	  genpart_KstFromB_index = -1;
+	  genpart_KFromKst_index = -1;
+	  genpart_PiFromKst_index = -1;
+	}
+      }// K*ll
+    }// found B
+  }// loop over gen
+  
+  
+  if(isKll && genpart_KFromB_index < 0) return;
+  if(!isKll && (genpart_KstFromB_index < 0 || genpart_PiFromKst_index < 0 || genpart_KFromKst_index < 0)) return;
+  if(genpart_lep1FromB_index < 0 || genpart_lep2FromB_index < 0) return;
+  
+  if(debugCOUT) std::cout << " now filling vectors  " << std::endl;
+  
+  if((*genPart)[genpart_B_index].daughter(genpart_lep1FromB_index)->pt() > (*genPart)[genpart_B_index].daughter(genpart_lep2FromB_index)->pt()){
+    genpart_lep1_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_lep1FromB_index)->pt()));
+    genpart_lep1_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_lep1FromB_index)->eta()));
+    genpart_lep1_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_lep1FromB_index)->phi()));
+    genpart_lep1_PtEtaPhiM.push_back(float((LeptonFinalStateID == 11) ? ElectronMass_ : MuonMass_));
     
-    temp_genpart_grandmother_pdgId.push_back( temp_gmom->pdgId());
-    temp_genpart_grandmother_pt.push_back( temp_gmom->pt());
-    temp_genpart_grandmother_eta.push_back( temp_gmom->eta());
-    temp_genpart_grandmother_phi.push_back( temp_gmom->phi());
-    temp_genpart_grandmother_Bindex.push_back(c);
-    temp_genpart_grandmother_x.push_back(temp_gmom->vx());
-    temp_genpart_grandmother_y.push_back(temp_gmom->vy());
-    temp_genpart_grandmother_z.push_back(temp_gmom->vz());
-   
-     for (unsigned int igmu=0; igmu<temp_gmom->numberOfDaughters(); igmu++){
-       const Candidate * temp_mom = temp_gmom->daughter(igmu);
-       temp_genpart_mother_pt.push_back(temp_mom->pt());
-       temp_genpart_mother_eta.push_back(temp_mom->eta());
-       temp_genpart_mother_phi.push_back(temp_mom->phi());
-       temp_genpart_mother_pdgId.push_back(temp_mom->pdgId());
-       temp_genpart_mother_Bindex.push_back(c);
-       temp_genpart_mother_Daughtindex.push_back(igmu);
- 
-       for (unsigned int imu=0; imu<temp_mom->numberOfDaughters(); imu++){
-	   const Candidate * temp=temp_mom->daughter(imu);
-           temp_genpart_pt.push_back(temp->pt());
-           temp_genpart_eta.push_back(temp->eta());
-           temp_genpart_phi.push_back(temp->phi());
-           temp_genpart_pdgId.push_back(temp->pdgId());
-           temp_genpart_charge.push_back(temp->charge());
-           temp_genpart_Bindex.push_back(c);
-           temp_genpart_Daughtindex.push_back(igmu);
-//           cout<<" gdaughter "<<temp->pdgId()<<endl;   
-       }
-     }   
+    genpart_lep2_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_lep2FromB_index)->pt()));
+    genpart_lep2_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_lep2FromB_index)->eta()));
+    genpart_lep2_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_lep2FromB_index)->phi()));
+    genpart_lep2_PtEtaPhiM.push_back(float((LeptonFinalStateID == 11) ? ElectronMass_ : MuonMass_));
+
+    genpart_B_pdg = (*genPart)[genpart_B_index].pdgId();
+    genpart_lep1FromB_pdg = (*genPart)[genpart_B_index].daughter(genpart_lep1FromB_index)->pdgId();
+    genpart_lep2FromB_pdg = (*genPart)[genpart_B_index].daughter(genpart_lep2FromB_index)->pdgId();
   }
+  else{
+    genpart_lep2_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_lep1FromB_index)->pt()));
+    genpart_lep2_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_lep1FromB_index)->eta()));
+    genpart_lep2_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_lep1FromB_index)->phi()));
+    genpart_lep2_PtEtaPhiM.push_back(float((LeptonFinalStateID == 11) ? ElectronMass_ : MuonMass_));
+    
+    genpart_lep1_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_lep2FromB_index)->pt()));
+    genpart_lep1_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_lep2FromB_index)->eta()));
+    genpart_lep1_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_lep2FromB_index)->phi()));
+    genpart_lep1_PtEtaPhiM.push_back(float((LeptonFinalStateID == 11) ? ElectronMass_ : MuonMass_));
 
-  std::vector<std::vector<float>> tempv;
-  tempv.push_back(temp_genpart_pt);  tempv.push_back(temp_genpart_eta);
-  tempv.push_back(temp_genpart_phi); tempv.push_back(temp_genpart_pdgId);
-  tempv.push_back(temp_genpart_charge);  tempv.push_back(temp_genpart_Bindex); 
-  tempv.push_back(temp_genpart_Daughtindex); tempv.push_back(temp_genpart_mother_pt);
-  tempv.push_back(temp_genpart_mother_eta); tempv.push_back(temp_genpart_mother_phi);
-  tempv.push_back(temp_genpart_mother_pdgId);
-  tempv.push_back(temp_genpart_mother_Bindex); tempv.push_back(temp_genpart_mother_Daughtindex);
-  tempv.push_back(temp_genpart_grandmother_pt);  tempv.push_back(temp_genpart_grandmother_eta);
-  tempv.push_back(temp_genpart_grandmother_phi); tempv.push_back(temp_genpart_grandmother_pdgId); 
-  tempv.push_back(temp_genpart_grandmother_Bindex); tempv.push_back(temp_genpart_grandmother_x); 
-  tempv.push_back(temp_genpart_grandmother_y); tempv.push_back(temp_genpart_grandmother_z);
-  return tempv;
+    genpart_B_pdg = (*genPart)[genpart_B_index].pdgId();
+    genpart_lep1FromB_pdg = (*genPart)[genpart_B_index].daughter(genpart_lep2FromB_index)->pdgId();
+    genpart_lep2FromB_pdg = (*genPart)[genpart_B_index].daughter(genpart_lep1FromB_index)->pdgId();    
+  }
+  
+  if(isKll){
+    genpart_K_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_KFromB_index)->pt()));
+    genpart_K_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_KFromB_index)->eta()));
+    genpart_K_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_KFromB_index)->phi()));
+    genpart_K_PtEtaPhiM.push_back(KaonMass_);
+
+    genpart_KFromB_pdg = (*genPart)[genpart_B_index].daughter(genpart_KFromB_index)->pdgId();
+  }
+  else{
+    genpart_Kst_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_KstFromB_index)->pt()));
+    genpart_Kst_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_KstFromB_index)->eta()));
+    genpart_Kst_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_KstFromB_index)->phi()));
+    genpart_Kst_PtEtaPhiM.push_back(KaonStarMass_);
+
+    genpart_K_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_KstFromB_index)->daughter(genpart_KFromKst_index)->pt()));
+    genpart_K_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_KstFromB_index)->daughter(genpart_KFromKst_index)->eta()));
+    genpart_K_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_KstFromB_index)->daughter(genpart_KFromKst_index)->phi()));
+    genpart_K_PtEtaPhiM.push_back(KaonMass_);
+
+    genpart_Pi_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_KstFromB_index)->daughter(genpart_PiFromKst_index)->pt()));
+    genpart_Pi_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_KstFromB_index)->daughter(genpart_PiFromKst_index)->eta()));
+    genpart_Pi_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_KstFromB_index)->daughter(genpart_PiFromKst_index)->phi()));
+    genpart_Pi_PtEtaPhiM.push_back(PionMass_);
+
+    genpart_KstFromB_pdg = (*genPart)[genpart_B_index].daughter(genpart_KstFromB_index)->pdgId();
+    genpart_KFromKst_pdg = (*genPart)[genpart_B_index].daughter(genpart_KstFromB_index)->daughter(genpart_KFromKst_index)->pdgId();
+    genpart_PiFromKst_pdg = (*genPart)[genpart_B_index].daughter(genpart_KstFromB_index)->daughter(genpart_PiFromKst_index)->pdgId();
+  }
+  
+ 
+  return;
 }
 
 
-template<typename T1>
-std::vector<std::vector<float>> SkimAnalyzer<T1>::genMuAnalyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){ 
+
+std::vector<std::vector<float> > SkimAnalyzer::genMuAnalyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){ 
   using namespace std;
   using namespace edm;
   using namespace reco;
@@ -546,9 +460,9 @@ std::vector<std::vector<float>> SkimAnalyzer<T1>::genMuAnalyze(const edm::Event&
 }
 
 
-template<typename T1>
-std::pair<std::vector<float>,std::vector<std::vector<std::vector<float> > > >  SkimAnalyzer<T1>::HLTAnalyze(const edm::Event& iEvent, const edm::EventSetup& iSetup,
-													    std::vector<std::string> HLTPath, std::vector<std::string> Seed ){
+
+std::pair<std::vector<float>,std::vector<std::vector<std::vector<float> > > >  SkimAnalyzer::HLTAnalyze(const edm::Event& iEvent, const edm::EventSetup& iSetup,
+													std::vector<std::string> HLTPath, std::vector<std::string> Seed ){
 
   using namespace std;  using namespace edm;  using namespace reco;
   using namespace trigger;
@@ -617,11 +531,10 @@ std::pair<std::vector<float>,std::vector<std::vector<std::vector<float> > > >  S
 
 
 
-template<typename T1>
-std::vector<float> SkimAnalyzer<T1>::SelectTrg_Object(std::vector<std::vector<float> > &tr1, std::vector<std::vector<float> > &tr2, 
-						      std::vector<std::vector<float> > &tr3, std::vector<std::vector<float> > &tr4,
-						      std::vector<std::vector<float> > &tr5, std::vector<std::vector<float> > &tr6){
-
+std::vector<float> SkimAnalyzer::SelectTrg_Object(std::vector<std::vector<float> > &tr1, std::vector<std::vector<float> > &tr2, 
+						  std::vector<std::vector<float> > &tr3, std::vector<std::vector<float> > &tr4,
+						  std::vector<std::vector<float> > &tr5, std::vector<std::vector<float> > &tr6){
+  
   //each vector contains pt, eta, phi, charge
   std::vector<std::vector<float> > max1;
   for (auto & vec: tr1) max1.push_back(vec);
@@ -639,8 +552,8 @@ std::vector<float> SkimAnalyzer<T1>::SelectTrg_Object(std::vector<std::vector<fl
   return max1[0];
 }
 
-template<typename T1> 
-std::vector<float> SkimAnalyzer<T1>::SimulateTrigger(std::vector<float> & genMu_pt, std::vector<float> & genMu_eta, 
+
+std::vector<float> SkimAnalyzer::SimulateTrigger(std::vector<float> & genMu_pt, std::vector<float> & genMu_eta, 
 						     std::vector<float> & genMu_phi,std::vector<float> & genMu_ch){
   std::vector<std::vector<float>> max1;
   for(unsigned int igen=0; igen<genMu_pt.size(); igen++){
@@ -667,23 +580,93 @@ std::vector<float> SkimAnalyzer<T1>::SimulateTrigger(std::vector<float> & genMu_
 
 
 
-template<typename T1> 
-float SkimAnalyzer<T1>::Dphi(float phi1,float phi2){
-float result = phi1 - phi2;
- while (result > float(M_PI)) result -= float(2*M_PI);
-    while (result <= -float(M_PI)) result += float(2*M_PI);
-return result;
-
+float SkimAnalyzer::Dphi(float phi1,float phi2){
+  float result = phi1 - phi2;
+  while (result > float(M_PI)) result -= float(2*M_PI);
+  while (result <= -float(M_PI)) result += float(2*M_PI);
+  return result;
 }
 
-template<typename T1> 
-float SkimAnalyzer<T1>::DR(float eta1,float phi1,float eta2, float phi2){
+
+float SkimAnalyzer::DR(float eta1,float phi1,float eta2, float phi2){
   return TMath::Sqrt((eta1-eta2)*(eta1-eta2)+Dphi(phi1,phi2)*Dphi(phi1,phi2));
 }
 
-template<typename T1>
-void
-SkimAnalyzer<T1>::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+
+void SkimAnalyzer::Init(){
+
+  vertex_x.clear();  vertex_y.clear();  vertex_z.clear();  
+  beam_x = -9999, beam_y = -9999, beam_z = -99999;
+
+  nmuons=0; nelectron=0; ntracks=0;
+  muon_pt.clear(); muon_eta.clear(); muon_phi.clear(); muon_charge.clear();
+  muon_dz.clear(); muon_dxy.clear(); muon_edz.clear(); muon_edxy.clear();
+  muon_d0.clear(); muon_ed0.clear(); muon_vx.clear(); muon_vy.clear();
+  muon_vz.clear(); muon_iso.clear(); muon_soft.clear(); muon_loose.clear();
+  muon_medium.clear(); muon_tight.clear(); muon_trkpt.clear();
+  muon_trketa.clear(); muon_trkphi.clear();
+ 
+  el_pt.clear(); el_eta.clear(); el_phi.clear(); el_charge.clear();
+  el_vx.clear(); el_vy.clear(); el_vz.clear(); el_dxy.clear(); el_mva_out.clear();
+  el_dz.clear();el_edxy.clear(); el_edz.clear(); el_mva_out.clear(); 
+  el_mva_iso.clear(); el_iso.clear();   el_mva_map_value.clear();
+  el_veto.clear(); el_soft.clear(); el_medium.clear(); el_tight.clear();
+  el_trkpt.clear(); el_trketa.clear(); el_trkphi.clear();
+     
+  TrgObj1_PtEtaPhiCharge.clear(); TrgObj2_PtEtaPhiCharge.clear();
+  TrgObj3_PtEtaPhiCharge.clear(); TrgObj4_PtEtaPhiCharge.clear();
+  TrgObj5_PtEtaPhiCharge.clear(); TrgObj6_PtEtaPhiCharge.clear();
+  trigger1=0,trigger2=0,trigger3=0,trigger4=0,trigger5=0,trigger6=0;
+  SelectedTrgObj_PtEtaPhiCharge.clear(); 
+
+  SelectedMu_index = -1;
+  SelectedMu_DR = 1000;
+
+  genpart_B_index = -1;
+  genpart_lep1FromB_index = -1;
+  genpart_lep2FromB_index = -1;
+  genpart_KFromB_index = -1;
+  genpart_KstFromB_index = -1;
+  genpart_KFromKst_index = -1;
+  genpart_PiFromKst_index = -1;
+
+  genpart_B_pdg = -1;
+  genpart_lep1FromB_pdg = -1;
+  genpart_lep2FromB_pdg = -1;
+  genpart_KFromB_pdg = -1;
+  genpart_KstFromB_pdg = -1;
+  genpart_KFromKst_pdg = -1;
+  genpart_PiFromKst_pdg = -1;
+ 
+  genpart_B_PtEtaPhiM.clear();
+  genpart_lep1_PtEtaPhiM.clear();
+  genpart_lep2_PtEtaPhiM.clear();
+  genpart_K_PtEtaPhiM.clear();
+  genpart_Kst_PtEtaPhiM.clear();
+  genpart_Pi_PtEtaPhiM.clear();
+
+
+  track_pt.clear(); track_eta.clear(); track_phi.clear(); track_dxy.clear();
+  track_norm_chi2.clear(); track_charge.clear();  track_edz.clear(); 
+  track_dz.clear(); track_MuCleaned.clear(); track_edxy.clear();
+  track_vx.clear(); track_vz.clear(); track_vy.clear(); track_mva.clear();
+  
+  TTrack_PtEtaPhiM.clear(); TTrack_XYZ.clear();  TTrack_cos.clear();
+  TTrack_chi_prob.clear(); TTrack_ObjIndex.clear(); TTrack_TrkIndex.clear(); 
+  TTrack_kid.clear(); TTrack_mll.clear(); TTrack_Lxy.clear();
+  TTrack_eLxy.clear(); TTrack_ObjId.clear();
+
+  Epair_PtEtaPhiM.clear(); Epair_XYZ.clear();  Epair_cos.clear();
+  Epair_chi_prob.clear(); Epair_ObjIndex.clear(); Epair_TrkIndex.clear();
+  Epair_Lxy.clear(); Epair_eLxy.clear(); Epair_ObjId.clear();
+
+  genMu_pt.clear(); genMu_eta.clear(); genMu_phi.clear(); genMu_ch.clear(); 
+  genMu_motherId.clear(); genMu_gmotherId.clear();
+
+}
+
+
+void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
  
   using namespace std;
@@ -728,7 +711,7 @@ SkimAnalyzer<T1>::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   iEvent.getByToken(vtxToken_, vertices);
   
   //continue if there are no vertices
-  if (vertices->empty()) return;
+  if (vertices->empty()) { if(debugCOUT) std::cout << "no vertices"<< std::endl; return;}
 
   edm::Handle<vector<reco::Track>> tracks;
   iEvent.getByToken(Tracks_, tracks);
@@ -745,120 +728,81 @@ SkimAnalyzer<T1>::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   KalmanVertexFitter theKalmanFitter(false);
   TransientVertex LLvertex;
   
-  vertex_x.clear();  vertex_y.clear();  vertex_z.clear();  
-  beam_x = -9999, beam_y = -9999, beam_z = -99999;
- 
   //run stuff
   run_number = iEvent.id().run();
   ls = iEvent.luminosityBlock();
- 
-  // trigger1=0; trigger2=0; trigger3=0; trigger4=0; trigger5=0; trigger6=0;
-  event++; nmuons=0; nel=0; ntracks=0;
-  muon_pt.clear(); muon_eta.clear(); muon_phi.clear(); muon_charge.clear();
-  muon_dz.clear(); muon_dxy.clear(); muon_edz.clear(); muon_edxy.clear();
-  muon_d0.clear(); muon_ed0.clear(); muon_vx.clear(); muon_vy.clear();
-  muon_vz.clear(); muon_iso.clear(); muon_soft.clear(); muon_loose.clear();
-  muon_medium.clear(); muon_tight.clear(); muon_trkpt.clear();
-  muon_trketa.clear(); muon_trkphi.clear();
- 
-  el_pt.clear(); el_eta.clear(); el_phi.clear(); el_charge.clear();
-  el_vx.clear(); el_vy.clear(); el_vz.clear(); el_dxy.clear(); el_mva_out.clear();
-  el_dz.clear();el_edxy.clear(); el_edz.clear(); el_mva_out.clear(); 
-  el_mva_iso.clear(); el_iso.clear();   el_mva_map_value.clear();
-  el_veto.clear(); el_soft.clear(); el_medium.clear(); el_tight.clear();
-  el_trkpt.clear(); el_trketa.clear(); el_trkphi.clear();
-     
-  TrgObj1_PtEtaPhiCharge.clear(); TrgObj2_PtEtaPhiCharge.clear();
-  TrgObj3_PtEtaPhiCharge.clear(); TrgObj4_PtEtaPhiCharge.clear();
-  TrgObj5_PtEtaPhiCharge.clear(); TrgObj6_PtEtaPhiCharge.clear();
-  trigger1=0,trigger2=0,trigger3=0,trigger4=0,trigger5=0,trigger6=0;
-  SelectedTrgObj_PtEtaPhiCharge.clear(); SelectedMu_index=-1;
-  SelectedMu_DR=1000;
 
-  genpart_pt.clear(),genpart_phi.clear(),genpart_eta.clear(),genpart_pdgId.clear(),genpart_charge.clear();
-  genpart_Bindex.clear(),genpart_Daughtindex.clear();
-  genpart_mother_pt.clear(),genpart_mother_eta.clear(),genpart_mother_phi.clear(),genpart_mother_pdgId.clear();
-  genpart_mother_Bindex.clear(),genpart_mother_Daughtindex.clear();
-  genpart_grandmother_pt.clear(),genpart_grandmother_eta.clear(),genpart_grandmother_phi.clear(),genpart_grandmother_pdgId.clear();
-  genpart_grandmother_Bindex.clear(); genpart_grandmother_x.clear(); genpart_grandmother_y.clear(); genpart_grandmother_z.clear();
- 
-  track_pt.clear(); track_eta.clear(); track_phi.clear(); track_dxy.clear();
-  track_norm_chi2.clear(); track_charge.clear();  track_edz.clear(); 
-  track_dz.clear(); track_MuCleaned.clear(); track_edxy.clear();
-  track_vx.clear(); track_vz.clear(); track_vy.clear(); track_mva.clear();
-  
-  TTrack_PtEtaPhiM.clear(); TTrack_XYZ.clear();  TTrack_cos.clear();
-  TTrack_chi_prob.clear(); TTrack_ObjIndex.clear(); TTrack_TrkIndex.clear(); 
-  TTrack_kid.clear(); TTrack_mll.clear(); TTrack_Lxy.clear();
-  TTrack_eLxy.clear(); TTrack_ObjId.clear();
+  event++; 
 
-  Epair_PtEtaPhiM.clear(); Epair_XYZ.clear();  Epair_cos.clear();
-  Epair_chi_prob.clear(); Epair_ObjIndex.clear(); Epair_TrkIndex.clear();
-  Epair_Lxy.clear(); Epair_eLxy.clear(); Epair_ObjId.clear();
 
-  genMu_pt.clear(); genMu_eta.clear(); genMu_phi.clear(); genMu_ch.clear(); 
-  genMu_motherId.clear(); genMu_gmotherId.clear();
-
-  //internal stuff
-  ZvertexTrg = -100000000;
-
-  for (VertexCollection::const_iterator vtx = vertices->begin();   vtx != vertices->end(); ++vtx) {
+  for (VertexCollection::const_iterator vtx = vertices->begin(); vtx != vertices->end(); ++vtx){
     bool isFake = vtx->isFake();
     if ( isFake) continue;
     vertex_x.push_back(vtx->x());  vertex_y.push_back(vtx->y());  vertex_z.push_back(vtx->z()); 
   }
-  if (vertex_x.size()==0) return;
+  if (vertex_x.size() ==0 ) return;
   reco::TrackBase::Point  vertex_point;
-  vertex_point.SetCoordinates(vertex_x[0],vertex_y[0],vertex_z[0]);
+  vertex_point.SetCoordinates(vertex_x[0], vertex_y[0], vertex_z[0]);
 
   beam_x = theBeamSpot->x0(); beam_y = theBeamSpot->y0(); beam_z = theBeamSpot->z0();   
-  genparts.clear(); genmu.clear();
-  
-  if(!IsData){
-   genparts = genAnalyze(iEvent,iSetup);
-   genpart_pt=genparts[0]; genpart_eta=genparts[1]; genpart_phi=genparts[2];
-   genpart_pdgId=genparts[3]; genpart_charge=genparts[4]; 
-   genpart_Bindex=genparts[5]; genpart_Daughtindex=genparts[6]; 
-   genpart_mother_pt=genparts[7]; genpart_mother_eta=genparts[8]; 
-   genpart_mother_phi=genparts[9]; genpart_mother_pdgId=genparts[10]; 
-   genpart_mother_Bindex=genparts[11]; genpart_mother_Daughtindex=genparts[12];
-   genpart_grandmother_pt=genparts[13]; genpart_grandmother_eta=genparts[14]; 
-   genpart_grandmother_phi=genparts[15]; genpart_grandmother_pdgId=genparts[16];
-   genpart_grandmother_Bindex=genparts[17]; genpart_grandmother_x=genparts[18];
-   genpart_grandmother_y=genparts[19]; genpart_grandmother_z=genparts[20];
 
+
+  std::vector<std::vector<float> > genparts;
+  std::vector<std::vector<float> > genmu;
+  genparts.clear(); genmu.clear();
+
+  
+  Init();
+
+  if(debugCOUT) std::cout << " analyzer => MC gen  " << std::endl;
+
+  if(!IsData){
+   genAnalyze(iEvent,iSetup);
+
+   /*
    genmu = genMuAnalyze(iEvent,iSetup);
    genMu_pt=genmu[0]; genMu_eta=genmu[1]; genMu_phi=genmu[2]; 
    genMu_ch=genmu[3];  genMu_motherId=genmu[4]; genMu_gmotherId=genmu[5]; 
 
    //gen muon pt decreasing order => can be replaced by SelectTrg_Object for new MC
    SelectedTrgObj_PtEtaPhiCharge = SimulateTrigger(genMu_pt, genMu_eta, genMu_phi, genMu_ch); 
+   */
   }
 
-  if (IsData){    
+  if(debugCOUT) std::cout << " analyzer => HLT paths  " << std::endl;
+
+  //  if (IsData){    
     std::pair<std::vector<float>, std::vector<std::vector<std::vector<float> > > > trgresult = HLTAnalyze(iEvent, iSetup, HLTPath_, HLTFilter_);
     trigger1=trgresult.first[0]; trigger2=trgresult.first[1]; trigger3=trgresult.first[2];  
     trigger4=trgresult.first[3]; trigger5=trgresult.first[4]; trigger6=trgresult.first[5];   
 
-    if(trigger1+trigger2+trigger3+trigger4+trigger5+trigger6 == 0) return;
+    if(trigger1+trigger2+trigger3+trigger4+trigger5+trigger6 == 0) { if(debugCOUT)std::cout << " no trigger " << std::endl; t1->Fill(); return;}
     TrgObj1_PtEtaPhiCharge=trgresult.second[0]; TrgObj2_PtEtaPhiCharge=trgresult.second[1];  
     TrgObj3_PtEtaPhiCharge=trgresult.second[2]; TrgObj4_PtEtaPhiCharge=trgresult.second[3]; 
     TrgObj5_PtEtaPhiCharge=trgresult.second[4]; TrgObj6_PtEtaPhiCharge=trgresult.second[5];      
 
     SelectedTrgObj_PtEtaPhiCharge = SelectTrg_Object(TrgObj1_PtEtaPhiCharge, TrgObj2_PtEtaPhiCharge, TrgObj3_PtEtaPhiCharge, 
 						     TrgObj4_PtEtaPhiCharge, TrgObj5_PtEtaPhiCharge, TrgObj6_PtEtaPhiCharge);
-  }
+    //}
+
+
+
+  if(debugCOUT) std::cout << " analyzer => Muons  " << std::endl;
  
-  SelectedMu_DR = 1000; SelectedMu_index = -1;
   std::vector<std::shared_ptr<reco::Track> > MuTracks; 
   std::vector<unsigned int> object_container;
   std::vector<unsigned int> object_id;
-  mutemp = 0;
+  int muIndex = 0;
 
+
+  float ZvertexTrg = -10000;
+  //  trk_index = -1;
+  if(debugCOUT) std::cout << " muon->size() = " << muons->size() << std::endl;
   //select at reco level muons with some requirements
   for (std::vector<reco::Muon>::const_iterator mu=muons->begin(); mu!=muons->end(); mu++){
     if (fabs(mu->eta()) > EtaTrack_Cut) continue;
     if (mu->pt() < PtMu_Cut) continue;
+
     bool tight = false, soft = false;
     if(vertices.isValid()){
       tight = isTightMuonCustom(*mu,(*vertices)[0]);
@@ -868,9 +812,10 @@ SkimAnalyzer<T1>::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     if (QualMu_Cut == 2 && !isMediumMuonCustom(*mu)) continue; 
     if (QualMu_Cut == 3 && !tight) continue;
     nmuons++; 
+
     muon_pt.push_back(mu->pt()); muon_phi.push_back(mu->phi());
     muon_eta.push_back(mu->eta()); muon_charge.push_back(mu->charge());
-
+    
     const Track * mutrack= mu->bestTrack(); 
     muon_trkpt.push_back(mutrack->pt()); muon_trketa.push_back(mutrack->eta());
     muon_trkphi.push_back(mutrack->phi());
@@ -884,52 +829,52 @@ SkimAnalyzer<T1>::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     muon_loose.push_back(isLooseMuonCustom(*mu));
     
     muon_tight.push_back(tight); muon_soft.push_back(soft);
-    auto muTrack=std::make_shared<reco::Track>(*mutrack);
+    auto muTrack = std::make_shared<reco::Track>(*mutrack);
     MuTracks.push_back(muTrack);
-    object_container.push_back(mutemp);
+    object_container.push_back(muIndex);
     object_id.push_back(13);
 
-    const MuonPFIsolation&  isol = mu->pfIsolationR04();
+    const MuonPFIsolation& isol = mu->pfIsolationR04();
     double mu_iso = (isol.sumChargedHadronPt+max(0.,isol.sumNeutralHadronEt+isol.sumPhotonEt-0.5*isol.sumPUPt))/mu->pt();
     muon_iso.push_back(mu_iso);
+
     float mu_trig_dR = DR(mu->eta(), mu->phi(), SelectedTrgObj_PtEtaPhiCharge[1], SelectedTrgObj_PtEtaPhiCharge[2]);
     if ( mu_trig_dR < MuTrgMatchCone && mu_trig_dR < SelectedMu_DR){
       SelectedMu_DR = SelectedMu_DR;
-      SelectedMu_index = mutemp;  
+      SelectedMu_index = muIndex;  
       ZvertexTrg = mu->vz();
     }
-    mutemp++;
+    ++muIndex;
     //delete mutrack;
-  }
+  } // reco muon
   
-  if (SelectedMu_DR == 1000 && SkipIfNoMuMatch){
-      muon_pt.clear(); muon_eta.clear(); muon_phi.clear(); muon_charge.clear();
-      muon_dz.clear(); muon_dxy.clear(); muon_edz.clear(); muon_edxy.clear();
-      muon_d0.clear(); muon_ed0.clear(); muon_vx.clear(); muon_vy.clear();
-      muon_vz.clear(); muon_iso.clear(); muon_soft.clear(); muon_loose.clear();
-      muon_medium.clear(); muon_tight.clear();
-      el_pt.clear(); el_eta.clear(); el_phi.clear(); el_charge.clear();
-      el_vx.clear(); el_vy.clear(); el_vz.clear(); el_dxy.clear(); el_mva_out.clear();
-      el_dz.clear();el_edxy.clear(); el_edz.clear(); el_mva_out.clear(); 
-      el_mva_iso.clear(); el_iso.clear();   el_mva_map_value.clear();
-      el_veto.clear(); el_soft.clear(); el_medium.clear(); el_tight.clear();
-      track_pt.clear(); track_eta.clear(); track_phi.clear(); track_dxy.clear();
-      track_norm_chi2.clear(); track_charge.clear();  track_edz.clear(); 
-      track_dz.clear(); track_MuCleaned.clear(); track_edxy.clear(); track_mva.clear();
-      ntracks=0; nel=0; nmuons=0; SelectedMu_index=-1;
-
-      t1->Fill();
-      return;
+  
+  if (SelectedMu_index == -1 && SkipIfNoMuMatch){
+    //Init(); 
+    t1->Fill();
+    if(debugCOUT) std::cout << " SelectedMu_index == -1 " << std::endl;
+    return;
   }
 
   std::vector<std::shared_ptr<reco::Track> > ElTracks;
-  for(size_t e=0; e<electrons->size(); e++){
+  int eleIndex = 0;
+  if(debugCOUT) std::cout << " electrons->size() = " << electrons->size() << std::endl;
+  for(size_t e = 0; e<electrons->size(); e++){
       const auto el = electrons->ptrAt(e);  
       bool passConvVeto = !ConversionTools::hasMatchedConversion(*el, conversions, theBeamSpot->position());
-      if (!passConvVeto) continue;
-      if (fabs(el->eta()) > EtaTrack_Cut) continue;
-      if (el->pt() < PtEl_Cut) continue;
+      if (!passConvVeto) { if(debugCOUT) std::cout << " !passConvVeto " << std::endl; continue;}
+      if (fabs(el->eta()) > EtaTrack_Cut) { if(debugCOUT) std::cout << " > EtaTrack_Cut " << std::endl; continue;}
+      if (el->pt() < PtEl_Cut) { if(debugCOUT) std::cout << " < PtEl_Cut " << std::endl; continue;}
 
+      if (SelectedMu_index != -1 ){
+	if (fabs(ZvertexTrg - el->vz()) > ElTrgMuDz_Cut ) { if(debugCOUT) std::cout << " vtxZ " << std::endl; continue;}
+	if ( DR(el->eta(),el->phi(), SelectedTrgObj_PtEtaPhiCharge[1],SelectedTrgObj_PtEtaPhiCharge[2]) < ElTrgExclusionCone) {
+	  if(debugCOUT) std::cout << " dR trig " << std::endl;
+	  continue;
+	}
+	//if ( DR(el->eta(),el->phi(), SelectedTrgObj_PtEtaPhiCharge[1],SelectedTrgObj_PtEtaPhiCharge[2]) < ElTrgExclusionCone) continue;
+      }
+      ++nelectron;
       el_pt.push_back(el->pt()); el_eta.push_back(el->eta());
       el_phi.push_back(el->phi()); el_charge.push_back(el->charge());
 
@@ -953,39 +898,43 @@ SkimAnalyzer<T1>::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       el_mva_map_value.push_back((*ele_mva_id_value)[el]);
 
       auto ElTrack = std::make_shared<reco::Track>(*eltrack);
-      ElTracks.push_back(ElTrack); object_container.push_back(nel);
-      //    cout<<"e "<<nel<<" pt "<<el->pt()<<" trkpt "<<eltrack->pt()<<endl;
-      nel++; object_id.push_back(11);
+      ElTracks.push_back(ElTrack); 
+      object_container.push_back(eleIndex);
+      ++eleIndex; 
+      object_id.push_back(11);
       //  delete eltrack;
   }
+
  
 
   std::vector<std::shared_ptr<reco::Track> > cleanedTracks; 
   std::vector<unsigned int> track_container;
-  trk_index=0;
+  int trk_index = 0;
 
   if (!UseOnlyBKeeMCForTriplets){
     for (typename vector<reco::Track>::const_iterator trk=tracks->begin(); trk!=tracks->end(); trk++){
       if (!trk->quality(Track::highPurity)) continue;
       if (trk->pt() < PtTrack_Cut) continue;
       if (fabs(trk->eta()) > EtaTrack_Cut) continue;
-      if(trk->charge() == 0) continue;
-      if(trk->normalizedChi2() > MaxChi2Track_Cut || trk->normalizedChi2() < MinChi2Track_Cut) continue;
+      if (trk->charge() == 0) continue;
+      if (trk->normalizedChi2() > MaxChi2Track_Cut || trk->normalizedChi2() < MinChi2Track_Cut) continue;
       if (fabs(trk->dxy())/trk->dxyError() < TrackSdxy_Cut) continue;
 
-      //select the muon closest to the track
+      // exclude tracks overlapping reco muons
+      /*
       double minDR = 1000;
       for (typename vector<reco::Muon>::const_iterator mu = muons->begin(); mu!=muons->end(); mu++){
 	double tempDR = DR(mu->eta(),mu->phi(),trk->eta(),trk->phi());
-	if (minDR < tempDR) continue;
-	minDR = tempDR;
+	if (tempDR < minDR) minDR = tempDR;
       }
-
       if (minDR < MuTrkMinDR_Cut) continue;
+      */
+      
       //parameters from the muon matched in dr to the trigger muon
-      if (SelectedMu_DR < 1000 ){
-	if (fabs(ZvertexTrg - trk->vz()) > TrackMuDz_Cut ) continue;
-	if ( DR(trk->eta(),trk->phi(), SelectedTrgObj_PtEtaPhiCharge[1],SelectedTrgObj_PtEtaPhiCharge[2]) < TrgExclusionCone) continue;}
+      if (SelectedMu_index != -1 ){
+	if (fabs(ZvertexTrg - trk->vz()) > TrkTrgMuDz_Cut ) continue;
+	if ( DR(trk->eta(),trk->phi(), SelectedTrgObj_PtEtaPhiCharge[1],SelectedTrgObj_PtEtaPhiCharge[2]) < TrkTrgExclusionCone) continue;
+      }
 
       //assignments
       track_pt.push_back(trk->pt()); track_eta.push_back(trk->eta());
@@ -1000,63 +949,83 @@ SkimAnalyzer<T1>::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
       track_container.push_back(trk_index);
       trk_index++; ntracks++;  
+
       //bdt   
+      /*
       trk_pt =trk->pt(); trk_eta = trk->eta(); trk_phi = trk->phi(); trk_p =trk->p();
       trk_nhits = trk->found(); trk_high_purity = trk->quality(Track::highPurity);
       trk_chi2red = trk->normalizedChi2();
       float features[7]={trk_pt,trk_eta,trk_phi,trk_p,trk_nhits,trk_high_purity,trk_chi2red };
       float bdt_out = bdt.gbr->GetClassifier(features);
       track_mva.push_back(bdt_out);
+      */
     }
   }//!use only BToKee MC for triplets 
   
 
-  if (SaveOnlyTracks) {t1->Fill(); return;}
+
+  if (SaveOnlyTracks) {
+    t1->Fill(); 
+    if(debugCOUT) std::cout << " SaveOnlyTracks " << std::endl;
+    return;
+  }
   //create mother ee combination
   
-  
-  // fit track pairs
-  cleanedObjTracks.clear(); cleanedPairTracks.clear(); 
-  
-  TLorentzVector vel1,vel2;
-  std::vector<std::shared_ptr<reco::Track>> cleanedObjects; 
 
-  //objects    
+  // fit track pairs  
+  std::vector<std::shared_ptr<reco::Track> > cleanedObjTracks;
+  std::vector<std::shared_ptr<reco::Track> > cleanedPairTracks;
+  //  cleanedObjTracks.clear(); cleanedPairTracks.clear(); 
+  
+  TLorentzVector vel1, vel2;
+  std::vector<reco::TransientTrack> tempTracks;
+  std::vector<float> tempPtEtaPhiM, tempXYZ;
+
+  std::vector<std::shared_ptr<reco::Track> > cleanedObjects; 
   for(auto & vec: MuTracks) cleanedObjects.push_back(vec);
   for(auto & vec: ElTracks) cleanedObjects.push_back(vec);  
-  if (cleanedObjects.size() == 0) return;
+
+  if (cleanedObjects.size() == 0) { if(debugCOUT) std::cout << " cleanedObjects.size() == 0 " << "ElTracks.size = " << ElTracks.size() << std::endl; return;}
+
   for(unsigned int iobj=0; iobj<cleanedObjects.size(); iobj++){
     auto obj = cleanedObjects.at(iobj);
-    auto tranobj = std::make_shared<reco::TransientTrack>(reco::TransientTrack(*obj,&(*bFieldHandle)));
-      //int ctrk=0;
+
+    if(LeptonFinalStateID == 13 && object_id.at(iobj) != 13) continue;
+    else if (LeptonFinalStateID == 11 && object_id.at(iobj) != 11) continue;
+
     for(unsigned int itrk2=0; itrk2<cleanedTracks.size(); itrk2++){
       auto trk2 = cleanedTracks.at(itrk2);
       if (obj->charge()*trk2->charge() == 1) continue;
       if (ObjPtLargerThanTrack && obj->pt() < trk2->pt()) continue;
 
-      //supposed to be like that not take e 
-      //RA: 5.e-3 is electron mass
-      vel1.SetPtEtaPhiM(obj->pt(),obj->eta(),obj->phi(),0.0005);
-      vel2.SetPtEtaPhiM(trk2->pt(),trk2->eta(),trk2->phi(),0.0005);
+      float dR_l1l2 = DR(obj->eta(), obj->phi(), trk2->eta(), trk2->phi());
+      if(dR_l1l2 < TrkObjExclusionCone) continue;
 
-      if (DR(obj->eta(),obj->phi(), trk2->eta(),trk2->phi()) < TrkObjExclusionCone) continue;
-      if (object_id.at(iobj) == 13 && DR(obj->eta(),obj->phi(), SelectedTrgObj_PtEtaPhiCharge[1],SelectedTrgObj_PtEtaPhiCharge[2]) < MuTrgExclusionCone) continue;
-      if (object_id.at(iobj) == 11 && DR(obj->eta(),obj->phi(),SelectedTrgObj_PtEtaPhiCharge[1],SelectedTrgObj_PtEtaPhiCharge[2]) < ElTrgExclusionCone) continue;
+      vel1.SetPtEtaPhiM(obj->pt(), obj->eta(), obj->phi(), (LeptonFinalStateID == 11) ? ElectronMass_ : MuonMass_);
+      vel2.SetPtEtaPhiM(trk2->pt(), trk2->eta(), trk2->phi(), (LeptonFinalStateID == 11) ? ElectronMass_ : MuonMass_);
 
-      if (SelectedMu_DR < 1000 ){
+
+      if(SelectedMu_index != -1 && LeptonFinalStateID == 13){
+	if (object_id.at(iobj) == 13 && DR(obj->eta(),obj->phi(), SelectedTrgObj_PtEtaPhiCharge[1],SelectedTrgObj_PtEtaPhiCharge[2]) < MuTrgExclusionCone) continue;
 	if (object_id.at(iobj)==13 && fabs(ZvertexTrg- obj->vz()) > MuTrgMuDz_Cut ) continue;
-	if (object_id.at(iobj)==11 && fabs(ZvertexTrg-obj->vz()) > ElTrgMuDz_Cut ) continue;
       }
+      
+      //std::cout << " object_id.at(iobj) = " << object_id.at(iobj) << std::endl;
 
       //inv mass on lepton-track pair
       if ((vel1+vel2).M() > MaxMee_Cut || (vel1+vel2).M() < MinMee_Cut ) continue;   
-      auto trantrk2=std::make_shared<reco::TransientTrack>(reco::TransientTrack(*trk2,&(*bFieldHandle)));
+
+      auto tranobj = std::make_shared<reco::TransientTrack>(reco::TransientTrack(*obj,&(*bFieldHandle)));
+      auto trantrk2 = std::make_shared<reco::TransientTrack>(reco::TransientTrack(*trk2,&(*bFieldHandle)));
       tempTracks.clear(); 
       tempTracks.push_back(*tranobj); tempTracks.push_back(*trantrk2);
+
       LLvertex = theKalmanFitter.vertex(tempTracks);
       if (!LLvertex.isValid()) continue;
+
       if (ChiSquaredProbability(LLvertex.totalChiSquared(),LLvertex.degreesOfFreedom()) < Probee_Cut)  continue;
-      if (ZvertexTrg > -1000000 && fabs(ZvertexTrg-LLvertex.position().z()) > EpairZvtx_Cut ) continue;
+      if (SelectedMu_index != -1 && fabs(ZvertexTrg-LLvertex.position().z()) > EpairZvtx_Cut ) continue;
+
       GlobalError err = LLvertex.positionError();
       GlobalPoint Dispbeamspot(-1*( (theBeamSpot->x0() - LLvertex.position().x()) + (LLvertex.position().z()-theBeamSpot->z0()) * theBeamSpot->dxdz()), 
 			       -1*( (theBeamSpot->y0() - LLvertex.position().y())+ (LLvertex.position().z()-theBeamSpot->z0()) * theBeamSpot->dydz()), 0);
@@ -1081,50 +1050,65 @@ SkimAnalyzer<T1>::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       Epair_chi_prob.push_back(ChiSquaredProbability(LLvertex.totalChiSquared(),LLvertex.degreesOfFreedom())); 	
       Epair_Lxy.push_back(Dispbeamspot.perp());
       Epair_eLxy.push_back(err.rerr(Dispbeamspot));      
-    }    
-  }
+    }// cleanedTracks    
+  }//cleaned objects
      
-  if (SaveOnlyEPairTracks) {t1->Fill(); return;}
-  // B recontrsuvtion
+
+
+  if (SaveOnlyEPairTracks) {
+    t1->Fill(); 
+    if(debugCOUT) std::cout << " SaveOnlyEPairTracks " << std::endl;
+    return;
+  }
+
+
+  // triplet
   TLorentzVector vK; 
   for(unsigned int iobj=0; iobj<cleanedObjTracks.size(); iobj++){
     auto objtrk = cleanedObjTracks.at(iobj);
     auto pairtrk = cleanedPairTracks.at(iobj);
-    auto tranobj = std::make_shared<reco::TransientTrack>(reco::TransientTrack(*objtrk,&(*bFieldHandle)));
-    auto tranpair = std::make_shared<reco::TransientTrack>(reco::TransientTrack(*pairtrk,&(*bFieldHandle)));
-
+ 
       for(unsigned int itrk=0; itrk<cleanedTracks.size(); itrk++){
-	auto trk=cleanedTracks.at(itrk);
+	auto trk = cleanedTracks.at(itrk);
+
 	if(DR(objtrk->eta(), objtrk->phi(), trk->eta(),trk->phi()) < TrkObjExclusionCone) continue;
+	if(DR(pairtrk->eta(), pairtrk->phi(), trk->eta(),trk->phi()) < TrkObjExclusionCone) continue;
+
 	if (trk->pt() < PtKTrack_Cut) continue;
 	if (fabs(trk->dxy(vertex_point))/trk->dxyError() < Ksdxy_Cut) continue;
-	if (trk->charge() == pairtrk->charge() && DR(pairtrk->eta(),pairtrk->phi(),trk->eta(),trk->phi()) < TrkTrkMinDR_Cut) continue;
          
 	//ele ele kaon
-	vel1.SetPtEtaPhiM(objtrk->pt(),objtrk->eta(),objtrk->phi(),0.0005);
-	vel2.SetPtEtaPhiM(pairtrk->pt(),pairtrk->eta(),pairtrk->phi(),0.0005);
-	vK.SetPtEtaPhiM(trk->pt(),trk->eta(),trk->phi(),0.493);
+	vel1.SetPtEtaPhiM(objtrk->pt(),objtrk->eta(),objtrk->phi(), (LeptonFinalStateID == 11) ? ElectronMass_ : MuonMass_);
+	vel2.SetPtEtaPhiM(pairtrk->pt(),pairtrk->eta(),pairtrk->phi(), (LeptonFinalStateID == 11) ? ElectronMass_ : MuonMass_);
+	vK.SetPtEtaPhiM(trk->pt(),trk->eta(),trk->phi(), KaonMass_);
 
 	if ((vel1+vel2+vK).M() > MaxMB_Cut || (vel1+vel2+vK).M() < MinMB_Cut) continue;
 	if ((vel1+vel2+vK).Pt() < PtB_Cut) continue;
-	auto trantrk=std::make_shared<reco::TransientTrack>(reco::TransientTrack(*trk,&(*bFieldHandle)));
+
+	auto tranobj = std::make_shared<reco::TransientTrack>(reco::TransientTrack(*objtrk,&(*bFieldHandle)));
+	auto tranpair = std::make_shared<reco::TransientTrack>(reco::TransientTrack(*pairtrk,&(*bFieldHandle)));
+	auto trantrk = std::make_shared<reco::TransientTrack>(reco::TransientTrack(*trk,&(*bFieldHandle)));
 	tempTracks.clear();
-	tempTracks.push_back(*tranobj); tempTracks.push_back(*tranpair);
+	tempTracks.push_back(*tranobj); 
+	tempTracks.push_back(*tranpair);
 	tempTracks.push_back(*trantrk);
 	
 	LLvertex = theKalmanFitter.vertex(tempTracks);
 	if (!LLvertex.isValid()) continue;
+	
 	if (ChiSquaredProbability(LLvertex.totalChiSquared(),LLvertex.degreesOfFreedom()) < ProbeeK_Cut) continue;
 	GlobalError err = LLvertex.positionError();
 	GlobalPoint Dispbeamspot( -1 * ((theBeamSpot->x0()-LLvertex.position().x()) + (LLvertex.position().z()-theBeamSpot->z0()) * theBeamSpot->dxdz()),
 				  -1 * ((theBeamSpot->y0()-LLvertex.position().y()) + (LLvertex.position().z()-theBeamSpot->z0()) * theBeamSpot->dydz()), 0);
 	
-	math::XYZVector pperp((vel1+vel2+vK).Px(),(vel1+vel2+vK).Py(),0);
-	math::XYZVector vperp(Dispbeamspot.x(),Dispbeamspot.y(),0.);
+	math::XYZVector pperp((vel1+vel2+vK).Px(),(vel1+vel2+vK).Py(), 0);
+	math::XYZVector vperp(Dispbeamspot.x(),Dispbeamspot.y(), 0.);
 	float tempCos = vperp.Dot(pperp)/(vperp.R()*pperp.R());
 	if (tempCos < CoseeK_Cut) continue;
 	if (SLxy_Cut > Dispbeamspot.perp()/TMath::Sqrt(err.rerr(Dispbeamspot))) continue;
  
+	//std::cout << " found triplet " << std::endl;
+
 	tempPtEtaPhiM.clear(); tempXYZ.clear();
 	tempPtEtaPhiM.push_back((vel1+vel2+vK).Pt());
 	tempPtEtaPhiM.push_back((vel1+vel2+vK).Eta()); 
@@ -1144,48 +1128,29 @@ SkimAnalyzer<T1>::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 	TTrack_Lxy.push_back(Dispbeamspot.perp());
 	TTrack_eLxy.push_back(err.rerr(Dispbeamspot));
 	if (EarlyStop) break;
-      }
-  }
-  if (TTrack_chi_prob.size() == 0){
-    muon_pt.clear(); muon_eta.clear(); muon_phi.clear(); muon_charge.clear();
-    muon_dz.clear(); muon_dxy.clear(); muon_edz.clear(); muon_edxy.clear();
-    muon_d0.clear(); muon_ed0.clear(); muon_vx.clear(); muon_vy.clear();
-    muon_vz.clear(); muon_iso.clear(); muon_soft.clear(); muon_loose.clear();
-    muon_medium.clear(); muon_tight.clear();
-    
-    el_pt.clear(); el_eta.clear(); el_phi.clear(); el_charge.clear();
-    el_vx.clear(); el_vy.clear(); el_vz.clear(); el_dxy.clear(); el_mva_out.clear();
-    el_dz.clear();el_edxy.clear(); el_edz.clear(); el_mva_out.clear(); 
-    el_mva_iso.clear(); el_iso.clear();   el_mva_map_value.clear();
-    el_veto.clear(); el_soft.clear(); el_medium.clear(); el_tight.clear();
-    track_pt.clear(); track_eta.clear(); track_phi.clear(); track_dxy.clear();
-    track_norm_chi2.clear(); track_charge.clear();  track_edz.clear(); 
-    track_dz.clear(); track_MuCleaned.clear(); track_edxy.clear();
-    ntracks=0; nel=0; nmuons=0; SelectedMu_index=-1; track_mva.clear();
-  }    
+      }// tracks 3rd 
+  }// objects l1 and l2
+
+  //  if (TTrack_chi_prob.size() == 0) Init();
+
+  if(debugCOUT) std::cout << " filling histo genpart_B_index = " << genpart_B_index << std::endl;
   t1->Fill();
 }
 
 
 // ------------ method called once each job just before starting event loop  ------------
-template<typename T1>
-void 
-SkimAnalyzer<T1>::beginJob()
+void SkimAnalyzer::beginJob()
 {
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
-template<typename T1>
-void 
-SkimAnalyzer<T1>::endJob() 
+void SkimAnalyzer::endJob() 
 {
   // t1->Fill();
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
-template<typename T1>
-void
-SkimAnalyzer<T1>::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+void SkimAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   //The following says we do not know what parameters are allowed so do no validation
   // Please change this to state exactly what you do use, even if it is no parameters
   edm::ParameterSetDescription desc;
@@ -1195,6 +1160,7 @@ SkimAnalyzer<T1>::fillDescriptions(edm::ConfigurationDescriptions& descriptions)
 
 
 //define this as a plug-in
-typedef SkimAnalyzer<reco::RecoEcalCandidate> SkimAnalyzerb;
-DEFINE_FWK_MODULE(SkimAnalyzerb);
+//typedef SkimAnalyzer<reco::RecoEcalCandidate> SkimAnalyzerb;
+//DEFINE_FWK_MODULE(SkimAnalyzerb);
+DEFINE_FWK_MODULE(SkimAnalyzer);
 

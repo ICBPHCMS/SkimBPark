@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
 
-IsData = False
+IsData = True
 globaltag = '102X_upgrade2018_realistic_v15'
 HLTsave = False ; 
 if IsData:
@@ -29,27 +29,16 @@ process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag,globaltag,'')
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
 
 process.source = cms.Source("PoolSource",
                             fileNames = cms.untracked.vstring(
 
 #data
-#'/store/data/Run2018B/ParkingBPH5/AOD/PromptReco-v1/000/317/650/00000/E216E20E-E06E-E811-8F13-FA163E15F06E.root'
+'/store/data/Run2018B/ParkingBPH5/AOD/PromptReco-v1/000/317/650/00000/E216E20E-E06E-E811-8F13-FA163E15F06E.root'
 #mc
-'/store/mc/RunIIAutumn18DR/BuToK_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_102X_upgrade2018_realistic_v15-v3/90000/FF7DE4ED-3ED2-1040-BD7F-87729F17AE92.root',
-'/store/mc/RunIIAutumn18DR/BuToK_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_102X_upgrade2018_realistic_v15-v3/90000/F9FCE450-3579-FB4A-B5B6-3B792929EA6C.root', 
-'/store/mc/RunIIAutumn18DR/BuToK_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_102X_upgrade2018_realistic_v15-v3/90000/FC68B2C9-79D1-7348-859C-3F0E4C362A4C.root', 
-'/store/mc/RunIIAutumn18DR/BuToK_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_102X_upgrade2018_realistic_v15-v3/90000/FF7DE4ED-3ED2-1040-BD7F-87729F17AE92.root',
-'/store/mc/RunIIAutumn18DR/BuToK_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_102X_upgrade2018_realistic_v15-v3/90000/E8E7B542-E3FC-2740-81A3-E4272BBBB006.root',
-'/store/mc/RunIIAutumn18DR/BuToK_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_102X_upgrade2018_realistic_v15-v3/90000/E8EE9916-18D4-6547-883C-055A8345C330.root',
-'/store/mc/RunIIAutumn18DR/BuToK_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_102X_upgrade2018_realistic_v15-v3/90000/EAF93F92-4D7A-FD4C-B726-4EDA797DD991.root',
-'/store/mc/RunIIAutumn18DR/BuToK_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_102X_upgrade2018_realistic_v15-v3/90000/ECD4A3A2-57FC-BE4C-A354-2F83B59210E6.root',
-'/store/mc/RunIIAutumn18DR/BuToK_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_102X_upgrade2018_realistic_v15-v3/90000/CBF34D3D-411B-7041-809C-A074911D8977.root',
-'/store/mc/RunIIAutumn18DR/BuToK_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_102X_upgrade2018_realistic_v15-v3/90000/CD12E151-0572-9F47-8A1D-A66CF5A1DA97.root',
-'/store/mc/RunIIAutumn18DR/BuToK_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_102X_upgrade2018_realistic_v15-v3/90000/CF2FA866-2269-B343-9D1B-6D83EAFF4906.root',
-'/store/mc/RunIIAutumn18DR/BuToK_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_102X_upgrade2018_realistic_v15-v3/90000/E10A7C57-D2F7-3249-A263-BF8B080AD3B3.root',
-'/store/mc/RunIIAutumn18DR/BuToK_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_102X_upgrade2018_realistic_v15-v3/90000/C484C9AE-FCDA-1345-BA8A-0CE3144316E4.root'
+#'/store/mc/RunIIAutumn18DR/BuToK_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_102X_upgrade2018_realistic_v15-v3/90000/FF7DE4ED-3ED2-1040-BD7F-87729F17AE92.root'
+#'root://xrootd.grid.osg-se.sprace.org.br/store/mc/RunIIAutumn18DR/BuToK_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/AODSIM/PUPoissonAve20_102X_upgrade2018_realistic_v15-v3/90000/E8E7B542-E3FC-2740-81A3-E4272BBBB006.root'
                             ),
                             secondaryFileNames=cms.untracked.vstring(
                             )
@@ -172,7 +161,7 @@ process.options = cms.untracked.PSet(
 
 
 process.TFileService = cms.Service("TFileService",
-                                   fileName = cms.string( "outputResHPt_MC10k.root" )
+                                   fileName = cms.string( "outputResHPt_data10k.root" )
 )
 process.fevt = cms.OutputModule("PoolOutputModule",
                                 # SelectEvents = cms.untracked.PSet(SelectEvents = cms.vstring("path")),

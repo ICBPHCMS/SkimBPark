@@ -256,11 +256,20 @@ private:
   std::vector<float> TTrack_ObjIndex;
   std::vector<float> TTrack_TrkIndex;
   std::vector<float> TTrack_kid;
+  std::vector<float> TTrack_piid;
   std::vector<float> TTrack_mll;
+  std::vector<float> TTrack_mKst;
   std::vector<float> TTrack_cos;
   std::vector<float> TTrack_Lxy;
   std::vector<float> TTrack_eLxy;
   std::vector<unsigned int> TTrack_ObjId;
+
+  //Kst
+  std::vector<std::vector<float> > Kstpair_PtEtaPhiM;
+  std::vector<float> Kstpair_cos;
+  std::vector<float> Kstpair_chi_prob;
+  std::vector<float> Kstpair_Lxy;
+  std::vector<float> Kstpair_eLxy;
 
 
   int genpart_B_index;
@@ -322,6 +331,9 @@ private:
   //triplet
   float MaxMB_Cut, MinMB_Cut, PtB_Cut, SLxy_Cut, ProbeeK_Cut, CoseeK_Cut;
   float Ksdxy_Cut;
+
+  float MinKst_Cut, MaxKst_Cut, PtKst_Cut, ProbKst_Cut, CosKst_Cut, SLxyKst_Cut;
+  float MaxBeeKst_Cut, MinBeeKst_Cut, PtBeeKst_Cut, ProbBeeKst_Cut, CosBeeKst_Cut, SLxyBeeKst_Cut;
 
   float PtMu_Cut, QualMu_Cut;
   float PtEl_Cut;

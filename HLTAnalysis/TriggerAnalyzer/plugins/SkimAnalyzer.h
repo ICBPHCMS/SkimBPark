@@ -124,6 +124,9 @@ private:
 
   float Dphi(float phi1,float phi2);
   float DR(float eta1,float phi1,float eta2, float phi2);
+
+  int sharedHits(reco::Track& track1, reco::Track& track2) const;
+
   void Init();
 
   std::pair<std::vector<float>, std::vector<std::vector<std::vector<float> > > > HLTAnalyze(const edm::Event& iEvent, 
@@ -255,6 +258,7 @@ private:
   std::vector<float> TTrack_chi_prob;
   std::vector<float> TTrack_ObjIndex;
   std::vector<float> TTrack_TrkIndex;
+  std::vector<float> TTrack_KstarIndex;
   std::vector<float> TTrack_kid;
   std::vector<float> TTrack_piid;
   std::vector<float> TTrack_mll;

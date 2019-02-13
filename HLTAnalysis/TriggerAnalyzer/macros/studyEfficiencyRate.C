@@ -28,14 +28,39 @@ float DR(float eta1, float phi1, float eta2, float phi2){
 
 
 
-int studyEfficiencyRate(){
+int studyEfficiencyRate(int isKstar = 0){
   TChain *ccmc = new TChain("demo/mytree");
   TChain *ccdata = new TChain("demo/mytree");
 
-  ccdata->Add("../test/outputResHPt_DATA.root");
-  //ccmc->Add("../test/outputResHPt_MC10k_newHLT.root");
-  ccmc->Add("../test/outputResHPt_MC1k.root");
-  //ccmc->Add("../test/outputResHPt.root");
+  if(!isKstar){
+    ccdata->Add("../test/outputBSkim_DATA_K_10k.root");
+    ccmc->Add("../test/outputBSkim_MC_K_100k.root");
+    /*
+  //ccdata->Add("../test/outputResHPt_data1k.root");
+    ccdata->Add("../test/outputResHPt_data_10k.root");
+
+  //ccmc->Add("../test/outputResHPt_MC_Kst_Ksel_10k.root");
+  //ccmc->Add("../test/outputResHPt_MC_Kst_Ksel_3k.root");
+
+   ccmc->Add("../test/outputResHPt_MC10k.root");
+    */
+  }
+  else{
+    // ccmc->Add("../test/outputBSkim_MC_Kst_5k.root");
+    // ccdata->Add("../test/outputBSkim_DATA_Kst_500ev.root");
+
+    ccmc->Add("../test/outputBSkim_MC_Kst_100k.root");
+    ccdata->Add("../test/outputBSkim_DATA_Kst_10k.root");
+
+    //ccdata->Add("../test/outputResHPt_data_Kstsel_1k_backup1k.root");
+    //ccdata->Add("../test/outputResHPt_data_Kstsel_1k_bkpOK200eventi.root");
+    //ccmc->Add("../test/outputResHPt_MC_Kst_5k.root");
+    //ccmc->Add("../test/outputResHPt_MC_Kst_3k.root");
+
+    //accept dR<0.02 for ele pairs
+    //ccmc->Add("../test/outputResHPt_MC_Kst_3k.root");
+    //ccdata->Add("../test/outputResHPt_data_Kstsel_1k.root");
+  }
   skim_class mc;
   mc.Init(ccmc);
 
@@ -47,15 +72,24 @@ int studyEfficiencyRate(){
   TH1F* hE1ptGen = new TH1F("hE1ptGen"," ",60,0,60);
   TH1F* hE2ptGen = new TH1F("hE2ptGen"," ",60,0,60);
   TH1F* hKptGen = new TH1F("hKptGen"," ",60,0,60);
+  TH1F* hPptGen = new TH1F("hPptGen"," ",60,0,60);
 
-  TH1F* hDReltrk = new TH1F("hDReltrk"," ",100,0,0.3);
+  TH1F* hKstarMassGen = new TH1F("hKstarMassGen", "", 100, 0., 2.);
+  TH1F* hKstarMassReco = new TH1F("hKstarMassReco", "", 100, 0., 2.);
+  TH1F* hllMassGen = new TH1F("hllMassGen", "", 100, 0., 6.);
+  TH1F* hllMassReco = new TH1F("hllMassReco", "", 100, 0., 6.);
+
+  TH1F* hDRP = new TH1F("hDRP"," ",100,0,0.3);
   TH1F* hDRK = new TH1F("hDRK"," ",100,0,0.3);
+  TH1F* hDReltrk = new TH1F("hDReltrk"," ",100,0,0.3);
   TH1F* hDRrecoE = new TH1F("hDRrecoE"," ",100,0,0.3);
+  TH1F* hDRGlobal = new TH1F("hDRGlobal", "", 100,0,0.3);
 
   TH1F* hBRecoPt = new TH1F("hBRecoPt"," ",60,0,60);
   TH1F* hE1RecoPt = new TH1F("hE1RecoPt"," ",60,0,60);
   TH1F* hE2RecoPt = new TH1F("hE2RecoPt"," ",60,0,60);
   TH1F* hKRecoPt = new TH1F("hKRecoPt"," ",60,0,60);
+  TH1F* hPRecoPt = new TH1F("hPRecoPt"," ",60,0,60);
 
 
   float Cos_cuts[10] = {-1.1, 0, 0.5,0.7, 0.8, 0.9, 0.95,0.99,0.995,0.999};
@@ -63,66 +97,148 @@ int studyEfficiencyRate(){
   float Lxy_cuts[10] = {0, 1, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6 };
   float M_cuts[10] = {3.5, 3.7, 3.9, 4.1, 4.3, 4.5, 4.7, 4.9, 5.1, 5.27 };
   float Trk_cuts[10] = {0, 0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8 };
-  float SigEffCos[10] = {0},BkgEffCos[10]={0};
-  float SigEffPtB[10] = {0},BkgEffPtB[10]={0}; 
-  float SigEffLxy[10] = {0},BkgEffLxy[10]={0};
-  float SigEffM[10] = {0},BkgEffM[10]={0};
-  float SigEffTrk[10] = {0},BkgEffTrk[10]={0};
+  float SigEffCos[10] = {0}, BkgEffCos[10] = {0};
+  float SigEffPtB[10] = {0}, BkgEffPtB[10] = {0}; 
+  float SigEffLxy[10] = {0}, BkgEffLxy[10] = {0};
+  float SigEffM[10] = {0}, BkgEffM[10] = {0};
+  float SigEffTrk[10] = {0}, BkgEffTrk[10] = {0};
+
+  // float PDG_BCharged_mass = 5.279;
+  // float PDG_B0_mass = 5.279;
+  float PDG_B_mass = 5.279;
+  float PDG_K0st_mass = 0.89581;
+  float KaonMass = 0.493677;
+  float PionMass = 0.139570;
+  float MuonMass = 0.10565837;
+  float ElectronMass = 0.5109989e-3;
+
+  float dRMCmatching_val = 0.06;
+  float dzProbeTagMuon_val = 0.3;
+  float mllCut_val = 5.;
+  float k0starMassdiff_minval = 0.8; //20MeV in PDG error is 0.2MeV
+  float k0starMassdiff_maxval = 1.1; //20MeV in PDG error is 0.2MeV
+  float pTK_val = 0.4;
+  float mBmax_val = 6.;
+  float mBmin_val = 4.1;
+  float vtxCLB_val = 1.e-3;
+  float cosAlpha_val = 0.9;
+  float pTB_val = 5.;
+  float IPSB_val = 4.;
 
   //signal
   float nEventsMC = ccmc->GetEntries();
-  std::cout << " mc events = " << nEventsMC << std::endl;
+  std::cout << " \n  mc events = " << nEventsMC << std::endl;
   
+  float ngen[4] = {0., 0., 0., 0.};
+  float ngenAcceptance[4] = {0., 0., 0., 0.};
+  float nTrip_matched[4] = {0., 0., 0., 0.};
+  float nTrip_matched_dR[4] = {0., 0., 0., 0.};
+  float nTrip_matched_MuTag[4] = {0., 0., 0., 0.};
+  float ndZ_cut[4] = {0., 0., 0., 0.};
+  float nMll_cut[4] = {0., 0., 0., 0.};
+  float nK0StarMass_cut[4] = {0., 0., 0., 0.};
+  float nK0StarVtxCL_cut[4] = {0., 0., 0., 0.};
+  float npTK_cut[4] = {0., 0., 0., 0.};
+  float nMB_cut[4] = {0., 0., 0., 0.};
+  float nVtxCLB_cut[4] = {0., 0., 0., 0.};
+  float nCosAlpha_cut[4] = {0., 0., 0., 0.};
+  float npTB_cut[4] = {0., 0., 0., 0.};
+  float nIPSB_cut[4] = {0., 0., 0., 0.};
 
-  float ngen = 0, ngenAcceptance = 0;
-  float nPt2 = 0; // gen lepton pT > 2
-  float reco_obj = 0;
-  float reco_vtx = 0,reco_dz = 0,reco_mll = 0,reco_llprob = 0,reco_kpt = 0, reco_Mtri = 0;
-  float reco_prob = 0, reco_cos = 0,reco_ptB = 0, reco_Lxy = 0,  nObj=0, nTrk=0, nK=0, nTrk2=0;
 
   for (int ev=0; ev<nEventsMC; ev++){
     mc.GetEntry(ev);
 
     //take reco candidate closest to gen
-    TLorentzVector vel1, vel2, vK;
+    TLorentzVector vel1, vel2, vK, vP;
 
     if(mc.genpart_B_index == -1) continue;
 
-    //Kee
-    vel1.SetPtEtaPhiM(mc.genpart_lep1_PtEtaPhiM->at(0), mc.genpart_lep1_PtEtaPhiM->at(1), mc.genpart_lep1_PtEtaPhiM->at(2), mc.genpart_lep1_PtEtaPhiM->at(3));
-    vel2.SetPtEtaPhiM(mc.genpart_lep2_PtEtaPhiM->at(0), mc.genpart_lep2_PtEtaPhiM->at(1), mc.genpart_lep2_PtEtaPhiM->at(2), mc.genpart_lep2_PtEtaPhiM->at(3));
-    vK.SetPtEtaPhiM(mc.genpart_K_PtEtaPhiM->at(0), mc.genpart_K_PtEtaPhiM->at(1), mc.genpart_K_PtEtaPhiM->at(2), mc.genpart_K_PtEtaPhiM->at(3));
-    bool BKee = true;
-    float Kcharge = (mc.genpart_KFromB_pdg > 0) ? 1 : -1;
-    float Ele1charge = (mc.genpart_lep1FromB_pdg > 0) ? 1 : -1;
-    float Ele2charge = (mc.genpart_lep2FromB_pdg > 0) ? 1 : -1;
+    bool BKee = false;
+    float Kcharge = 0.;
+    float Picharge = 0.;
+    float Ele1charge = 0.;
+    float Ele2charge = 0.;
+
+
+    bool CutGenMatched[2] = {false, false};
+
+    if(!isKstar){
+      //Kee
+      vel1.SetPtEtaPhiM(mc.genpart_lep1_PtEtaPhiM->at(0), mc.genpart_lep1_PtEtaPhiM->at(1), mc.genpart_lep1_PtEtaPhiM->at(2), mc.genpart_lep1_PtEtaPhiM->at(3));
+      vel2.SetPtEtaPhiM(mc.genpart_lep2_PtEtaPhiM->at(0), mc.genpart_lep2_PtEtaPhiM->at(1), mc.genpart_lep2_PtEtaPhiM->at(2), mc.genpart_lep2_PtEtaPhiM->at(3));
+      vK.SetPtEtaPhiM(mc.genpart_K_PtEtaPhiM->at(0), mc.genpart_K_PtEtaPhiM->at(1), mc.genpart_K_PtEtaPhiM->at(2), mc.genpart_K_PtEtaPhiM->at(3));
+      
+      BKee = true;
+      Kcharge = (mc.genpart_KFromB_pdg > 0) ? 1 : -1;
+      Ele1charge = (mc.genpart_lep1FromB_pdg > 0) ? 1 : -1;
+      Ele2charge = (mc.genpart_lep2FromB_pdg > 0) ? 1 : -1;
+    }
+    else{
+      //Kstee
+      vel1.SetPtEtaPhiM(mc.genpart_lep1_PtEtaPhiM->at(0), mc.genpart_lep1_PtEtaPhiM->at(1), mc.genpart_lep1_PtEtaPhiM->at(2), mc.genpart_lep1_PtEtaPhiM->at(3));
+      vel2.SetPtEtaPhiM(mc.genpart_lep2_PtEtaPhiM->at(0), mc.genpart_lep2_PtEtaPhiM->at(1), mc.genpart_lep2_PtEtaPhiM->at(2), mc.genpart_lep2_PtEtaPhiM->at(3));
+      vK.SetPtEtaPhiM(mc.genpart_K_PtEtaPhiM->at(0), mc.genpart_K_PtEtaPhiM->at(1), mc.genpart_K_PtEtaPhiM->at(2), mc.genpart_K_PtEtaPhiM->at(3));
+      vP.SetPtEtaPhiM(mc.genpart_Pi_PtEtaPhiM->at(0), mc.genpart_Pi_PtEtaPhiM->at(1), mc.genpart_Pi_PtEtaPhiM->at(2), mc.genpart_Pi_PtEtaPhiM->at(3));
+
+      hKstarMassGen->Fill((vK+vP).M());
+      hllMassGen->Fill((vel1+vel2).M());
+
+      BKee = true;
+      Kcharge = (mc.genpart_KFromKst_pdg > 0) ? 1 : -1;
+      Picharge = (mc.genpart_PiFromKst_pdg > 0) ? 1 : -1;
+      Ele1charge = (mc.genpart_lep1FromB_pdg > 0) ? 1 : -1;
+      Ele2charge = (mc.genpart_lep2FromB_pdg > 0) ? 1 : -1;
+    }
+
     if (!BKee) continue;
-    
+    ++ngen[0];
 
-    if(std::abs(vel1.Eta()) > 2.4 || std::abs(vel2.Eta()) > 2.4 || std::abs(vK.Eta()) > 2.4 ||
-       vel1.Pt() < 0.5 || vel2.Eta() < 0.5 || vK.Eta() < 0.5) continue;
-    ++ngenAcceptance;
+    if( DR(vel1.Eta(), vel1.Phi(), vel2.Eta(), vel2.Phi()) > 0.02) ++ngen[2];
 
-    if (fabs(vel1.Eta())>2.4 || fabs(vel2.Eta())>2.4 || fabs(vK.Eta())>2.4) continue;
-    ngen++;
+    if(std::abs(vel1.Eta()) > 2.5 || std::abs(vel2.Eta()) > 2.5 || std::abs(vK.Eta()) > 2.5 ||
+       vel1.Pt() < 0.4 || vel2.Pt() < 0.4 || vK.Pt() < 0.4) continue;
+    if(isKstar && (vP.Pt() < 0.4 || std::abs(vP.Eta()) > 2.5 )) continue;
+    ++ngenAcceptance[0];
+    CutGenMatched[0] = true;
+
+    if( DR(vel1.Eta(), vel1.Phi(), vel2.Eta(), vel2.Phi()) > 0.02){
+      ++ngenAcceptance[2];
+      CutGenMatched[1] = true;
+    }
+
 
      hBptGen->Fill((vel1+vel2+vK).Pt()); 
      hE1ptGen->Fill(vel1.Pt());
      hE2ptGen->Fill(vel2.Pt());
      hKptGen->Fill(vK.Pt()); 
+     if(isKstar) hPptGen->Fill(vP.Pt()); 
      //     std::cout << " >>> (vel1+vel2+vK).M() = " << (vel1+vel2+vK).M() << std::endl;
      //     std::cout << " mc triplets = " << mc.TTrack_cos->size() << std::endl;
 
-     float minDRK = 1000;
-     float minDRrecoE = 1000;
-     float minDRtrkE = 1000;
-     
-     int recoE = -1;
-     int trkEl = -1;
-     int trkK = -1;
-     int Bindex = -1;
-     
-     bool found = false; int selVetx = -1;
+
+     float minDRP[2] = {1000., 1000.};
+     float minDRK[2] = {1000., 1000.};
+     float minDRrecoE[2] = {1000., 1000.};
+     float minDRtrkE[2] = {1000., 1000.};
+
+     int recoE[2] = {-1, -1};
+     int trkEl[2] = {-1, -1};
+     int trkK[2] = {-1, -1};
+     int trkP[2] = {-1, -1};
+     int Bindex[2] = {-1, -1};
+     int selVetx[2] = {-1, -1};
+ 
+     TLorentzVector genB = isKstar ? vP+vK+vel1+vel2 : vK+vel1+vel2;
+     TLorentzVector vrel, vreltrk, vrK, vrP, vrB;
+     TLorentzVector vrelPE, vreltrkPE, vrKPE, vrPPE, vrBPE;
+
+     float globaldR[2] = {1000., 1000.};
+     float bestPtRatio[2] = {1000., 1000.};
+
+     bool found = false; 
+     bool foundPE = false; 
+
      for (unsigned int iB=0; iB<mc.TTrack_cos->size(); iB++)  {
        if (mc.TTrack_ObjId->at(iB) != 11) continue;
        //std::cout << " >> mc.TTrack_ObjId->at(iB) = " << mc.TTrack_ObjId->at(iB) << std::endl;
@@ -130,51 +246,118 @@ int studyEfficiencyRate(){
        int recoEd = mc.TTrack_ObjIndex->at(iB);
        int trkEld = mc.TTrack_TrkIndex->at(iB);
        int trkKd = mc.TTrack_kid->at(iB);
-       
-       float dR_ele1 = DR(vel1.Eta(),vel1.Phi(),mc.el_eta->at(recoEd),mc.el_phi->at(recoEd));
-       float dR_ele2 = DR(vel2.Eta(),vel2.Phi(),mc.track_eta->at(trkEld),mc.track_phi->at(trkEld));
-       float dR_trk = DR(vK.Eta(),vK.Phi(),mc.track_eta->at(trkKd),mc.track_phi->at(trkKd));
-       if ((dR_ele1 + dR_ele2 + dR_trk) < (minDRrecoE+minDRrecoE+minDRtrkE) && //mc.el_charge->at(recoEd) == Ele1charge && 
-	   //mc.track_charge->at(trkEld) == Ele2charge &&
-	   mc.track_charge->at(trkKd) == Kcharge &&
-	   mc.el_charge->at(recoEd) * mc.track_charge->at(trkEld) < 0){                                                                              
-	 minDRrecoE = dR_ele1;
-	 recoE = recoEd;
-	 //recoEle2charge = mc.track_charge->at(itrk);
+       int trkPd = isKstar ? mc.TTrack_piid->at(iB) : -1;
+
+       float dR_ele1 = DR(vel1.Eta(), vel1.Phi(), mc.el_eta->at(recoEd), mc.el_phi->at(recoEd));
+       float dR_ele2 = DR(vel2.Eta(), vel2.Phi(), mc.track_eta->at(trkEld), mc.track_phi->at(trkEld));
+       float dR_trk = DR(vK.Eta(), vK.Phi(), mc.track_eta->at(trkKd), mc.track_phi->at(trkKd));
+       float dR_trp = isKstar ? DR(vP.Eta(), vP.Phi(), mc.track_eta->at(trkPd), mc.track_phi->at(trkPd)) : 0;
+
+       float withBdR = dR_ele1+dR_ele2+dR_trk+dR_trp;
+
+       if(CutGenMatched[0] &&  withBdR < globaldR[0]){       
+       	 bestPtRatio[0] = vrB.Pt()/genB.Pt();
+	 globaldR[0] = withBdR;
+
+	 minDRrecoE[0] = dR_ele1;
+	 recoE[0] = recoEd;
 	 
-	 minDRtrkE = dR_ele2;
-	 trkEl = trkEld;
-	 //recoEle2charge = mc.track_charge->at(itrk);
+	 minDRtrkE[0] = dR_ele2;
+	 trkEl[0] = trkEld;
 	 
-	 minDRK = dR_trk;
-	 trkK = trkKd;
-	 //recoEle2charge = mc.track_charge->at(itrk);
-	 Bindex = iB;
+	 minDRK[0] = dR_trk;
+	 trkK[0] = trkKd;
+
+         minDRP[0] = dR_trp;
+         trkP[0] = trkPd;
+
+         Bindex[0] = iB;
 	 //std::cout << " >>> found triplet " << std::endl;
+       }
+       float dRrecoEleEle = DR(mc.el_eta->at(recoEd), mc.el_phi->at(recoEd), mc.track_eta->at(trkEld), mc.track_phi->at(trkEld));
+       if(CutGenMatched[1] && dRrecoEleEle > 0.02 && withBdR < globaldR[1]){
+	 bestPtRatio[1] = vrB.Pt()/genB.Pt();
+	 globaldR[1] = withBdR;
+
+	 minDRrecoE[1] = dR_ele1;
+	 recoE[1] = recoEd;
+	 
+	 minDRtrkE[1] = dR_ele2;
+	 trkEl[1] = trkEld;
+	 
+	 minDRK[1] = dR_trk;
+	 trkK[1] = trkKd;
+
+         minDRP[1] = dR_trp;
+         trkP[1] = trkPd;
+
+         Bindex[1] = iB;
        }
      }//loop over triplets
      
-     if(trkK != -1 && trkEl != -1 && recoE != -1){
+     if(trkK[0] != -1 && trkEl[0] != -1 && recoE[0] != -1 && (!isKstar || trkP[0] != -1 )){
        found = true; 
-       selVetx = Bindex;
+       selVetx[0] = Bindex[0];
      }
-     if(!found) continue;
+     if(trkK[1] != -1 && trkEl[1] != -1 && recoE[1] != -1 && (!isKstar || trkP[1] != -1 )){
+       foundPE = true; 
+       selVetx[1] = Bindex[1];
+     }
+
+     if(!found) continue; 
+    
+     if(found) ++nTrip_matched[0];     
+     if(foundPE) ++nTrip_matched[2];     
+
+     bool CutMatch[2] = {false, false};
+     bool CutMuTag[2] = {false, false};
+     bool CutDz[2] = {false, false};
+     bool CutMll[2] = {false, false};
+     bool CutKstar[2] = {false, false};
+     bool CutKstarVtxCL[2] = {false, false};
+     bool CutKpt[2] = {false, false};
+     bool CutMB[2] = {false, false};
+     bool CutProb[2] = {false, false};
+     bool CutCos[2] = {false, false};
+     bool CutPtB[2] = {false, false};
+     bool CutLxy[2] = {false, false};
+
+     if(found){
+     vrel.SetPtEtaPhiM(mc.el_pt->at(recoE[0]), mc.el_eta->at(recoE[0]), mc.el_phi->at(recoE[0]), ElectronMass);
+     vreltrk.SetPtEtaPhiM(mc.track_pt->at(trkEl[0]), mc.track_eta->at(trkEl[0]),mc.track_phi->at(trkEl[0]), ElectronMass);   
+     vrK.SetPtEtaPhiM(mc.track_pt->at(trkK[0]),mc.track_eta->at(trkK[0]),mc.track_phi->at(trkK[0]), KaonMass);
+     if(isKstar) vrP.SetPtEtaPhiM(mc.track_pt->at(trkP[0]),mc.track_eta->at(trkP[0]),mc.track_phi->at(trkP[0]), PionMass);     
+     vrB = isKstar ? vrP+vrK+vrel+vreltrk : vrK+vrel+vreltrk;
+     }
+
+     if(foundPE){
+     vrelPE.SetPtEtaPhiM(mc.el_pt->at(recoE[1]), mc.el_eta->at(recoE[1]), mc.el_phi->at(recoE[1]), ElectronMass);
+     vreltrkPE.SetPtEtaPhiM(mc.track_pt->at(trkEl[1]), mc.track_eta->at(trkEl[1]),mc.track_phi->at(trkEl[1]), ElectronMass);   
+     vrKPE.SetPtEtaPhiM(mc.track_pt->at(trkK[1]),mc.track_eta->at(trkK[1]),mc.track_phi->at(trkK[1]), KaonMass);
+     if(isKstar) vrPPE.SetPtEtaPhiM(mc.track_pt->at(trkP[1]),mc.track_eta->at(trkP[1]),mc.track_phi->at(trkP[1]), PionMass);     
+     vrBPE = isKstar ? vrPPE+vrKPE+vrelPE+vreltrkPE : vrKPE+vrelPE+vreltrkPE;
+     }
+
+     hDRrecoE->Fill(minDRrecoE[0]);
+     hDReltrk->Fill(minDRtrkE[0]);
+     hDRK->Fill(minDRK[0]);
+     if(isKstar) hDRP->Fill(minDRP[0]);
+     hDRGlobal->Fill(globaldR[0]);
+
+     if((isKstar && globaldR[0] < 4.*dRMCmatching_val) || (globaldR[0] < 3.*dRMCmatching_val)){ CutMatch[0] = true;  ++nTrip_matched_dR[0]; }
+     if((isKstar && globaldR[1] < 4.*dRMCmatching_val) || (globaldR[1] < 3.*dRMCmatching_val)){ CutMatch[1] = true;  ++nTrip_matched_dR[2]; }
+
+     hBRecoPt->Fill((vrel+vreltrk+vrK).Pt()); 
+     hE1RecoPt->Fill(vrel.Pt()); 
+     hE2RecoPt->Fill(vreltrk.Pt()); 
+     hKRecoPt->Fill(vrK.Pt()); 
+     if(isKstar) {
+       hPRecoPt->Fill(vrP.Pt());
+       hKstarMassReco->Fill((vrK+vrP).M());
+       hllMassReco->Fill((vrel+vreltrk).M());
+     }
      
-     hDRrecoE->Fill(recoE);
-     hDReltrk->Fill(minDRtrkE);
-     hDRK->Fill(minDRK);
-
-    ++reco_obj;
-    TLorentzVector vrel, vreltrk, vrK;
-    vrel.SetPtEtaPhiM(mc.el_pt->at(recoE), mc.el_eta->at(recoE), mc.el_phi->at(recoE), 0.0005);
-    vreltrk.SetPtEtaPhiM(mc.track_pt->at(trkEl), mc.track_eta->at(trkEl),mc.track_phi->at(trkEl),0.0005);   
-    vrK.SetPtEtaPhiM(mc.track_pt->at(trkK),mc.track_eta->at(trkK),mc.track_phi->at(trkK),0.493);
-
-    hBRecoPt->Fill((vrel+vreltrk+vrK).Pt()); 
-    hE1RecoPt->Fill(vrel.Pt()); 
-    hE2RecoPt->Fill(vreltrk.Pt()); 
-    hKRecoPt->Fill(vrK.Pt()); 
-
+    /*
     bool pairProb=false;
     for (unsigned int iB=0; iB<mc.Epair_cos->size(); iB++)  {
       if (mc.Epair_ObjId->at(iB) != 11) continue;
@@ -183,297 +366,401 @@ int studyEfficiencyRate(){
 	  pairProb = true;
       }
     }
+    */
 
     if(mc.SelectedMu_index == -1) continue;
-
-    bool setCuts1 = false;
-    if (found){ reco_vtx++; }
-
-
-    if (found && fabs(mc.muon_vz->at(mc.SelectedMu_index) - mc.el_vz->at(recoE) ) < 0.3) { 
-      reco_dz++;
-      //      std::cout << " >>> (vrel+vreltrk).M() = " << (vrel+vreltrk).M() << std::endl;
+    if(CutMatch[0]) { CutMuTag[0] = true;   ++nTrip_matched_MuTag[0];}
+    if(CutMatch[1]) { CutMuTag[1] = true;  ++nTrip_matched_MuTag[2];}
+  
+    if(CutMuTag[0] && fabs(mc.muon_vz->at(mc.SelectedMu_index) - mc.el_vz->at(recoE[0]) ) <  dzProbeTagMuon_val) {
+      CutDz[0] = true;
+      ++ndZ_cut[0];
     }
-    if (found && fabs(mc.muon_vz->at(mc.SelectedMu_index) - mc.el_vz->at(recoE) ) <0.3 && (vrel+vreltrk).M() < 5) reco_mll++;
-    if (found && pairProb && fabs(mc.muon_vz->at(mc.SelectedMu_index)-mc.el_vz->at(recoE))<0.3 && (vrel+vreltrk).M()<5) reco_llprob++;
-    if (found && pairProb && fabs(mc.muon_vz->at(mc.SelectedMu_index)-mc.el_vz->at(recoE))<0.3 && (vrel+vreltrk).M()<5 && vrK.Pt()>0.4){
-      reco_kpt++;
-      //      std::cout<< " >>> (vrel+vreltrk+vrK).M() = " << (vrel+vreltrk+vrK).M() << std::endl;
-    }
-    if (found && pairProb && fabs(mc.muon_vz->at(mc.SelectedMu_index)-mc.el_vz->at(recoE))<0.3 && (vrel+vreltrk).M()<5 && vrK.Pt()>0.4 && 
-	3.5 < (vrel+vreltrk+vrK).M() && (vrel+vreltrk+vrK).M()<6 ) {
-      reco_Mtri++;
-      setCuts1 = true;
+    if(CutMuTag[1] && fabs(mc.muon_vz->at(mc.SelectedMu_index) - mc.el_vz->at(recoE[1]) ) <  dzProbeTagMuon_val){
+      CutDz[1] = true;
+      ++ndZ_cut[2];
     }
 
 
-    if (setCuts1 && mc.TTrack_chi_prob->at(selVetx) > 0.001){ 
-      reco_prob++;
+    if( CutDz[0] && (vrel+vreltrk).M() < mllCut_val) {
+      CutMll[0] = true;
+      ++nMll_cut[0];
+    }
+    if( CutDz[1] && (vrelPE+vreltrkPE).M() < mllCut_val) {
+      CutMll[1] = true;
+      ++nMll_cut[2];
+    }
 
-      for (int i=0; i<10; i++){
-       if (mc.TTrack_cos->at(selVetx) > Cos_cuts[i]) SigEffCos[i]++;  
+
+    if(isKstar){
+      if( CutMll[0] && (vrK+vrP).M() > k0starMassdiff_minval && (vrK+vrP).M() < k0starMassdiff_maxval){
+	CutKstar[0] = true;
+	++nK0StarMass_cut[0];
+      }
+      if( CutMll[1] && (vrKPE+vrPPE).M() > k0starMassdiff_minval && (vrKPE+vrPPE).M() < k0starMassdiff_maxval){
+	CutKstar[1] = true;
+	++nK0StarMass_cut[2];
       }
     }
 
-    if (setCuts1 && mc.TTrack_chi_prob->at(selVetx)>0.001 && mc.TTrack_cos->at(selVetx)>0.9 ){ 
-      reco_cos++;
-      for (int i=0; i<10; i++){
-	if (mc.TTrack_PtEtaPhiM->at(selVetx).at(0) > PtB_cuts[i]) SigEffPtB[i]++;  
-      }
+    TLorentzVector vrKfromB = isKstar ? vrK+vrP : vrK;
+    TLorentzVector vrKfromBPE = isKstar ? vrKPE+vrPPE : vrKPE;
+
+    if(((isKstar && CutKstar[0]) || (!isKstar && CutMll[0]) ) && vrKfromB.Pt() > pTK_val){
+      CutKpt[0] = true;
+      ++npTK_cut[0];
+    }
+    if(((isKstar && CutKstar[1]) || (!isKstar && CutMll[1]) ) && vrKfromBPE.Pt() > pTK_val){
+      CutKpt[1] = true;
+      ++npTK_cut[2];
     }
 
-    if (setCuts1 && mc.TTrack_chi_prob->at(selVetx)>0.001 && mc.TTrack_cos->at(selVetx)>0.9 && mc.TTrack_PtEtaPhiM->at(selVetx).at(0) > 5 ){ 
-      reco_ptB++;
+    if(CutKpt[0])
       for (int i=0; i<10; i++){
-	if (mc.TTrack_Lxy->at(selVetx)/TMath::Sqrt(mc.TTrack_eLxy->at(selVetx))>Lxy_cuts[i]) SigEffLxy[i]++;  
+	if ( mc.TTrack_PtEtaPhiM->at(selVetx[0]).at(3) > M_cuts[i]) ++SigEffM[i];
       }
+    if( CutKpt[0] && ( vrB.M() > mBmin_val && vrB.M() < mBmax_val) ) {
+      CutMB[0] = true;
+      ++nMB_cut[0];
+    }
+    if( CutKpt[1] && ( vrBPE.M() > mBmin_val && vrBPE.M() < mBmax_val) ) {
+      CutMB[1] = true;
+      ++nMB_cut[2];
     }
 
-    bool setCuts2 = false;
-    if (setCuts1 && mc.TTrack_chi_prob->at(selVetx)>0.001 && mc.TTrack_cos->at(selVetx)>0.9 && mc.TTrack_PtEtaPhiM->at(selVetx).at(0)>5 && 
-	mc.TTrack_Lxy->at(selVetx)/TMath::Sqrt(mc.TTrack_eLxy->at(selVetx))>4 ) {
-      reco_Lxy++;
-      setCuts2 = true;
+    if(CutMB[0] && mc.TTrack_chi_prob->at(selVetx[0]) > vtxCLB_val){
+      CutProb[0] = true;
+      ++nVtxCLB_cut[0];
+    }
+    if(CutMB[1] && mc.TTrack_chi_prob->at(selVetx[1]) > vtxCLB_val){
+      CutProb[1] = true;
+      ++nVtxCLB_cut[2];
     }
 
+    if(CutProb[0])
+      for (int i=0; i<10; ++i){
+	if (mc.TTrack_cos->at(selVetx[0]) > Cos_cuts[i]) ++SigEffCos[i];
+      }
 
-    if (setCuts2){
-      for (int i=0; i<10; i++){
-	if ( mc.TTrack_PtEtaPhiM->at(selVetx).at(3)>M_cuts[i]) SigEffM[i]++;
-      }
+    if(CutProb[0] && mc.TTrack_cos->at(selVetx[0]) > cosAlpha_val){
+      CutCos[0] = true;
+      ++nCosAlpha_cut[0];
     }
-    if (setCuts2 && mc.TTrack_PtEtaPhiM->at(selVetx).at(3)>4.1){
-      for (int i=0; i<10; i++){
-	if ( vreltrk.Pt()>Trk_cuts[i] && vrK.Pt()>Trk_cuts[i]) SigEffTrk[i]++;
-      }
+    if(CutProb[1] && mc.TTrack_cos->at(selVetx[1]) > cosAlpha_val){
+      CutCos[1] = true;
+      ++nCosAlpha_cut[2];
     }
-     
+
+    if(CutCos[0])
+      for (int i=0; i<10; i++){
+	if (mc.TTrack_PtEtaPhiM->at(selVetx[0]).at(0) > PtB_cuts[i]) ++SigEffPtB[i];  
+      }
+
+
+    if (CutCos[0] && mc.TTrack_PtEtaPhiM->at(selVetx[0]).at(0) > pTB_val ){
+      CutPtB[0] = true;
+      ++npTB_cut[0];
+    }
+    if (CutCos[1] && mc.TTrack_PtEtaPhiM->at(selVetx[1]).at(0) > pTB_val ){
+      CutPtB[1] = true;
+      ++npTB_cut[2];
+    }
+
+    if(CutPtB[0])
+      for (int i=0; i<10; i++){
+	if (mc.TTrack_Lxy->at(selVetx[0])/TMath::Sqrt(mc.TTrack_eLxy->at(selVetx[0])) > Lxy_cuts[i]) ++SigEffLxy[i];  
+      }
+    
+    if (CutPtB[0] && mc.TTrack_Lxy->at(selVetx[0])/TMath::Sqrt(mc.TTrack_eLxy->at(selVetx[0])) > IPSB_val ){
+      CutLxy[0] = true;
+      ++nIPSB_cut[0];
+    }
+    if (CutPtB[1] && mc.TTrack_Lxy->at(selVetx[1])/TMath::Sqrt(mc.TTrack_eLxy->at(selVetx[1])) > IPSB_val ){
+      CutLxy[1] = true;
+      ++nIPSB_cut[2];
+    }
+
+    if(CutLxy[0])
+      for (int i=0; i<10; i++){
+	if (vreltrk.Pt() > Trk_cuts[i] && vrK.Pt() > Trk_cuts[i] && (!isKstar || vrP.Pt() > Trk_cuts[i])) ++SigEffTrk[i];
+    }
+  }//MC events
+
+
+  for(int ij=0; ij<3; ++ij){
+    if(ij == 0) std::cout << "\n  K* with charge exchange " << std::endl;
+    else if(ij == 2) std::cout << "\n  K* withOUT charge exchange " << std::endl;
+    else continue;
+
+    std::cout << " Ngen = " << ngen[ij] 
+	      << " \n Ngen in acceptance = " << ngenAcceptance[ij] 
+	      << " \n Nreco triplets genMatched = " << nTrip_matched[ij]
+	      << " \n Nreco triplets genMatched in dR = " << nTrip_matched_dR[ij]
+	      << " \n NrecoTriplets and tagMu = " << nTrip_matched_MuTag[ij]
+	      << " \n Ele1-Trg dz = " << ndZ_cut[ij] 
+	      << " \n mll < 5 = " << nMll_cut[ij] << std::endl;
+    if(isKstar) std::cout << " d(mK*) < 0.02 = " << nK0StarMass_cut[ij] << std::endl;
+    std::cout << " kpt > 0.4 = " << npTK_cut[ij]
+	      << " \n Mtrip in [4.1,6] = " << nMB_cut[ij]
+	      << " \n B_vtxCL > 1.e-3 = " << nVtxCLB_cut[ij]
+	      << " \n Bcos > 0.9 = " << nCosAlpha_cut[ij] 
+	      << " \n ptB > 5  = " << npTB_cut[ij]
+	      << " \n Lxy > 4 = " << nIPSB_cut[ij] << std::endl;
   }
-  //  hSigQ->SetBinContent(1,reco_nosoft);  hSigQ->SetBinContent(2,reco_soft);
- 
-
-
-  std::cout << " \n\n Ngen = " << ngen 
-	    << " \n Ngen in acceptance = " << ngenAcceptance 
-	    << " \n Nreco triplets genMatched = " << reco_obj 
-	    << " \n NrecoTriplets and tagMu = " << reco_vtx 
-	    << " \n Ele1-Trg dz = " << reco_dz 
-	    << " \n mll < 5 = " << reco_mll 
-    //<< " \n ll_vtxCL > 1.e-34 = " << reco_llprob
-	    << " \n kpt > 0.4 = " << reco_kpt 
-	    << " \n Mtrip in [3.5,6] = " << reco_Mtri 
-	    << " \n B_vtxCL > 1.e-3 = " << reco_prob
-	    << " \n Bcos > 0.9 = " << reco_cos 
-	    << " \n ptB >5  = " << reco_ptB 
-	    << " \n Lxy > 4 = " << reco_Lxy << std::endl;
-
-  //  std::cout<<"Pt>2 "<<nPt2/ngen<<" nobj "<<nObj/ngen<<"  ntrk "<<nTrk/nTrk2<<" nK "<<nK/ngen<<endl;
-
 
   //bakg
   float nEventsData = ccdata->GetEntries();
-  std::cout << "data " << nEventsData << std::endl;
+  std::cout << " \n data events " << nEventsData << std::endl;
 
-  float nbkg=0,nDz=0,nMll=0,nKpt=0,nMtri=0,nProb=0,nCos=0,nSoft=0,nNoSoft=0,nPtB=0,nLxy=0,nSoftEl=0,nTotal=0;
-  float Ntotal=0; int NMutag = 0;
-  float Ndz=0; float Nmll=0; float Nkpt=0; float Nmtri=0;
-  float Nprob=0; float Nvtx=0; //float Ncos=0; float NptB=0; float Nlxy=0;
-  int entries= 1000;//ccdata->GetEntries();
   for (int ev=0; ev<nEventsData; ev++){
+    //for (int ev=0; ev<100; ev++){
     data.GetEntry(ev);
-    if (ev%100==0) cout<<ev<<endl;
+    //if (ev%100==0) std::cout << "reading evt " << ev << std::endl;
+
+    bool Triplet[2] = {false, false};
+    bool CutMutag[2] = {false, false};
+    bool CutDz[2] = {false, false}; 
+    bool CutMll[2] = {false, false}; 
+    bool CutKstar[2] = {false, false}; 
+    bool CutKstarVtxCL[2] = {false, false};
+    bool CutKpt[2] = {false, false};
+    bool CutMB[2] = {false, false}; 
+    bool CutProb[2] = {false, false}; 
+    bool CutCos[2] = {false, false}; 
+    bool CutPtB[2] = {false, false};
+    bool CutLxy[2] = {false, false}; 
+
+
     //cuts
-    int tntrk=0,tnel=0;
+    //int tntrk=0,tnel=0;
+    float maxcos[2] = {-100, -100};
+    float maxPtB[2] = {-100, -100};
+    float maxLxy[2] = {-100, -100};
+    float Mtri[2] = {-100, -100};
+    float minTrk[2] = {-100, -100};
 
 
-    float maxcos=-100,maxPtB=-100,maxLxy=-100,Mtri=100,minTrk=-100;
-
-    bool found=false; 
-    bool CutMutag = false;
-    bool CutDz=false; bool CutMll=false; bool CutKpt=false;
-    bool CutMtri=false; bool CutProb=false; bool CutCos=false; bool CutPtB=false;
-    bool CutLxy=false; bool CutSoft=false; bool CutMtri2=false;
-    bool Triplet=false;
-
-
-    if( data.TTrack_cos->size() > 0) {
-      Triplet = true;
-      Ntotal = data.TTrack_cos->size();
-    }
-
-    if (Triplet)nTotal++;
+    if( data.TTrack_cos->size() <= 0) continue; 
+    Triplet[0] = true;
+    
     for (int ivtx=0; ivtx<data.TTrack_cos->size(); ivtx++){
       if (data.TTrack_ObjId->at(ivtx) != 11){ 
 	//  std::cout << " data.TTrack_ObjId->at(ivtx) = " << data.TTrack_ObjId->at(ivtx) << std::endl; 
 	continue;
       }
-      found = true;
-      Nvtx++;
-      int eid = data.TTrack_ObjIndex->at(ivtx);
+      bool found[2] = {true, true}; 
+
+      int recoEd = data.TTrack_ObjIndex->at(ivtx);
+      int trkEld = data.TTrack_TrkIndex->at(ivtx);
+
+      float dR_ele1ele2 = DR( data.el_eta->at(recoEd), data.el_phi->at(recoEd), data.track_eta->at(trkEld), data.track_phi->at(trkEld));
+      if(dR_ele1ele2 > 0.02) { /*std::cout << " dR_ele1ele2 = " << dR_ele1ele2 << std::endl; */ Triplet[1] = true;}
+      else found[1] = false;
 
       if (data.SelectedMu_index < 0) continue;
-      CutMutag = true;
+      CutMutag[0] = true;
+      if(found[1]) CutMutag[1] = true;
 
+      int eid = data.TTrack_ObjIndex->at(ivtx);
       float ZmuVtx = data.muon_vz->at(data.SelectedMu_index);
 
-      if (fabs(data.el_vz->at(eid) - ZmuVtx)>0.3) continue;
-      CutDz=true;
-      Ndz++;
-      if (data.TTrack_mll->at(ivtx)>5) continue;
-      CutMll=true;
-      Nmll++;
+      if (found[0] && fabs(data.el_vz->at(eid) - ZmuVtx) < dzProbeTagMuon_val) CutDz[0] = true;
+      else found[0] = false;
+      if (found[1] && fabs(data.el_vz->at(eid) - ZmuVtx) < dzProbeTagMuon_val) CutDz[1] = true;
+      else found[1] = false;
+
+      if (found[0] && data.TTrack_mll->at(ivtx) < mllCut_val) CutMll[0] = true;
+      else found[0] = false;
+      if (found[1] && data.TTrack_mll->at(ivtx) < mllCut_val) CutMll[1] = true;
+      else found[1] = false;
+
+      int KstarIndex = isKstar? data.TTrack_KstarIndex->at(ivtx) : -1;
+      if(isKstar){
+	if (found[0] && data.Kstpair_PtEtaPhiM->at(KstarIndex).at(3) > k0starMassdiff_minval && data.Kstpair_PtEtaPhiM->at(KstarIndex).at(3) < k0starMassdiff_maxval) CutKstar[0] = true;
+	else found[0] = false;
+	if (found[1] && data.Kstpair_PtEtaPhiM->at(KstarIndex).at(3) > k0starMassdiff_minval && data.Kstpair_PtEtaPhiM->at(KstarIndex).at(3) < k0starMassdiff_maxval) CutKstar[1] = true;
+	else found[1] = false;
+	// if(data.TTrack_mKst->at(ivtx) != data.Kstpair_PtEtaPhiM->at(KstarIndex).at(3)){
+	//   std::cout << " >>> KstarIndex = " << KstarIndex << " data.Kstpair_PtEtaPhiM.size() = " << data.Kstpair_PtEtaPhiM->size() << std::endl;
+	//   std::cout << " >>> problem index K* " << std::endl;
+	// }
+
+	// if(data.Kstpair_chi_prob->at(KstarIndex) < 1.e-3) continue;
+	// CutKstarVtxCL = true;
+      }
+
+
       int kid = data.TTrack_kid->at(ivtx);
-      if (data.track_pt->at(kid) < 0.4) continue;
-      CutKpt=true;
-      Nkpt++;
-      if (data.TTrack_PtEtaPhiM->at(ivtx).at(3)<3.5 || data.TTrack_PtEtaPhiM->at(ivtx).at(3)>6 ) continue;
-      CutMtri=true;
-      Nmtri++;
-      if (data.TTrack_chi_prob->at(ivtx)<0.001)  continue;
-      CutProb=true; 
-      Nprob++;
-      if ( maxcos<data.TTrack_cos->at(ivtx)) maxcos=data.TTrack_cos->at(ivtx);
-      if (data.TTrack_cos->at(ivtx)<0.9)  continue;
-      CutCos=true;
-      if ( maxPtB<data.TTrack_PtEtaPhiM->at(ivtx).at(0)) maxPtB=data.TTrack_PtEtaPhiM->at(ivtx).at(0);
-      if (data.TTrack_PtEtaPhiM->at(ivtx).at(0)<5)  continue;
-      CutPtB=true;
-      if (maxLxy<data.TTrack_Lxy->at(ivtx)/TMath::Sqrt(data.TTrack_eLxy->at(ivtx)))
-	maxLxy=data.TTrack_Lxy->at(ivtx)/TMath::Sqrt(data.TTrack_eLxy->at(ivtx));
-      if (data.TTrack_Lxy->at(ivtx)/TMath::Sqrt(data.TTrack_eLxy->at(ivtx))<4) 
-	continue;
-      CutLxy=true;
+      int pid = isKstar ? data.TTrack_piid->at(ivtx) : -1;
+      if(found[0] && ((data.track_pt->at(kid) > pTK_val && !isKstar) || (isKstar && data.Kstpair_PtEtaPhiM->at(KstarIndex).at(0) > pTK_val) ) ) CutKpt[0] = true;
+      else found[0] = false;
+      if(found[1] && ((data.track_pt->at(kid) > pTK_val && !isKstar) || (isKstar && data.Kstpair_PtEtaPhiM->at(KstarIndex).at(0) > pTK_val) ) ) CutKpt[1] = true;
+      else found[1] = false;
+
+      if(found[0] && fabs(Mtri[0] - PDG_B_mass) > fabs( PDG_B_mass - data.TTrack_PtEtaPhiM->at(ivtx).at(3)) ) Mtri[0] = data.TTrack_PtEtaPhiM->at(ivtx).at(3);
+      if(found[0] && (data.TTrack_PtEtaPhiM->at(ivtx).at(3) > mBmin_val && data.TTrack_PtEtaPhiM->at(ivtx).at(3) < mBmax_val) ) CutMB[0] = true;
+      else found[0] = false;
+      if(found[1] && (data.TTrack_PtEtaPhiM->at(ivtx).at(3) > mBmin_val && data.TTrack_PtEtaPhiM->at(ivtx).at(3) < mBmax_val) ) CutMB[1] = true;
+      else found[1] = false;
+
+      if(found[0] && data.TTrack_chi_prob->at(ivtx) > vtxCLB_val) CutProb[0] = true; 
+      else found[0] = false;
+      if(found[1] && data.TTrack_chi_prob->at(ivtx) > vtxCLB_val) CutProb[1] = true; 
+      else found[1] = false;
+
+      if (found[0] &&  maxcos[0] < data.TTrack_cos->at(ivtx)) maxcos[0] = data.TTrack_cos->at(ivtx);
+      if (found[0] && data.TTrack_cos->at(ivtx) > cosAlpha_val)  CutCos[0] = true;
+      else found[0] = false;
+      if (found[1] && data.TTrack_cos->at(ivtx) > cosAlpha_val)  CutCos[1] = true;
+      else found[1] = false;
+
+      if (found[0] && maxPtB[0] < data.TTrack_PtEtaPhiM->at(ivtx).at(0)) maxPtB[0] = data.TTrack_PtEtaPhiM->at(ivtx).at(0);
+      if (found[1] && data.TTrack_PtEtaPhiM->at(ivtx).at(0) > pTB_val) CutPtB[0] = true;
+      else found[0] = false;
+      if (found[1] && data.TTrack_PtEtaPhiM->at(ivtx).at(0) > pTB_val) CutPtB[1] = true;
+      else found[1] = false;
+
+      if (found[0] && maxLxy[0] < data.TTrack_Lxy->at(ivtx)/TMath::Sqrt(data.TTrack_eLxy->at(ivtx)))
+	maxLxy[0] = data.TTrack_Lxy->at(ivtx)/TMath::Sqrt(data.TTrack_eLxy->at(ivtx));
+      if (found[0] && data.TTrack_Lxy->at(ivtx)/TMath::Sqrt(data.TTrack_eLxy->at(ivtx)) > IPSB_val) CutLxy[0] = true;
+      else found[0] = false;
+      if (found[1] && data.TTrack_Lxy->at(ivtx)/TMath::Sqrt(data.TTrack_eLxy->at(ivtx)) > IPSB_val) CutLxy[1] = true;
+      else found[1] = false;
       
-      if (fabs(Mtri-5.27)>fabs(5.27-data.TTrack_PtEtaPhiM->at(ivtx).at(3))) Mtri=data.TTrack_PtEtaPhiM->at(ivtx).at(3); 
-      if (data.TTrack_PtEtaPhiM->at(ivtx).at(3)<4.1) continue;
-      CutMtri2=true;
-      float minpt=data.track_pt->at(kid);
-      if (data.track_pt->at(kid) >data.track_pt->at(eid))  minpt=data.track_pt->at(eid);
-      if (minTrk<minpt) minTrk=minpt;
+      float minpt = data.track_pt->at(kid);
+      if (found[0] && data.track_pt->at(kid) > data.track_pt->at(eid)) minpt = data.track_pt->at(eid);
+      if (found[0] && minTrk[0] < minpt) minTrk[0] = minpt;
+      if(found[0] && isKstar && data.track_pt->at(pid) < minTrk[0]) minTrk[0] = data.track_pt->at(pid);
+
     }//loop over triplets
     
-    if (found) nbkg++;
-    if(found && CutMutag) ++NMutag;
-    else continue;
+    for(int ij = 0; ij < 2; ++ij){
+      if (Triplet[ij]) ++nTrip_matched[2*ij+1];
+      if (CutMutag[ij]) ++nTrip_matched_MuTag[2*ij+1]; 
+      if (CutDz[ij]) ++ndZ_cut[2*ij+1];
+      if (CutMll[ij])  ++nMll_cut[2*ij+1];
+      if (isKstar && CutKstar[ij])  ++nK0StarMass_cut[2*ij+1];
+      //if (isKstar && CutKstarVtxCL[ij]) ++nK0StarVtxCL_cut[1];
+      if (CutKpt[ij]) ++npTK_cut[2*ij+1];
+      if (CutMB[ij]) ++nMB_cut[2*ij+1];
+      if (CutProb[ij]) ++nVtxCLB_cut[2*ij+1];
+      if (CutCos[ij]) ++nCosAlpha_cut[2*ij+1];
+      if (CutPtB[ij]) ++npTB_cut[2*ij+1];
+      if (CutLxy[ij]) ++nIPSB_cut[2*ij+1];
+    }
 
-    if (found && CutDz) nDz++;
-    if (found && CutDz && CutMll) nMll++;
-    if (found && CutDz && CutMll && CutKpt) nKpt++;
-    if (found && CutDz && CutMll && CutKpt && CutMtri) nMtri++;
-    // if (found && CutDz && CutMll && CutKpt && CutMtri ) nSoftEl++;
-    if (found && CutDz && CutMll && CutKpt && CutMtri && CutProb){ nProb++;
-      for (int i=0; i<10; i++){
-	if (maxcos>Cos_cuts[i]) BkgEffCos[i]++;}}
-    
-    if (found && CutDz && CutMll && CutKpt && CutMtri && CutProb && CutCos){ nCos++;
-      for (int i=0; i<10; i++){
-	if (maxPtB>PtB_cuts[i]) BkgEffPtB[i]++;}}
-    
-    if (found && CutDz && CutMll && CutKpt && CutMtri && CutProb && CutCos && CutPtB){ nPtB++;
-      for (int i=0; i<10; i++){
-	if (maxLxy>Lxy_cuts[i]) BkgEffLxy[i]++;}}
-    
-    if (found && CutDz && CutMll && CutKpt && CutMtri && CutProb && CutCos && CutPtB && CutLxy) nLxy++; 
-    if (found && CutDz && CutMll && CutKpt && CutMtri && CutProb && CutCos && CutPtB && CutLxy && CutSoft) nSoftEl++;   
-    if (found && CutDz && CutMll && CutKpt && CutMtri && CutProb && CutCos && CutPtB && CutLxy){
-      for (int i=0; i<10; i++){
-	if (Mtri>M_cuts[i]) BkgEffM[i]++;}}
-  if (found && CutDz && CutMll && CutKpt && CutMtri && CutProb && CutCos && CutPtB && CutLxy && CutMtri2){
     for (int i=0; i<10; i++){
-      if (minTrk>Trk_cuts[i]) BkgEffTrk[i]++;}} 
+      if (maxcos[0] > Cos_cuts[i]) ++BkgEffCos[i];
+      if (maxPtB[0] > PtB_cuts[i]) ++BkgEffPtB[i];
+      if (maxLxy[0] > Lxy_cuts[i]) ++BkgEffLxy[i];
+      if (Mtri[0] > M_cuts[i]) ++BkgEffM[i];
+      if (minTrk[0] > Trk_cuts[i]) ++BkgEffTrk[i];
+    }
+  }//loop over events
+
+
+
+  for(int ij=0; ij<4; ++ij){
+    if(ij == 1) std::cout << "\n  data K* with charge exchange " << std::endl;
+    else if(ij == 3) std::cout << "\n  data K* withOUT charge exchange " << std::endl;
+    else continue;
+    
+    std::cout << " Total = " << nTrip_matched[ij]
+              << " \n NrecoTriplets and tagMu = " << nTrip_matched_MuTag[ij]
+              << " \n Ele1-Trg dz = " << ndZ_cut[ij]
+              << " \n mll < 5 = " << nMll_cut[ij] << std::endl;
+    if(isKstar) std::cout << " d(mK*) < 0.02 = " << nK0StarMass_cut[ij] << std::endl;
+    std::cout << " kpt > 0.4 = " << npTK_cut[ij]
+              << " \n Mtrip in [4.1,6] = " << nMB_cut[ij]
+              << " \n B_vtxCL > 1.e-3 = " << nVtxCLB_cut[ij]
+              << " \n Bcos > 0.9 = " << nCosAlpha_cut[ij]
+              << " \n ptB > 5  = " << npTB_cut[ij]
+              << " \n Lxy > 4 = " << nIPSB_cut[ij] << std::endl;
   }
 
   
-  //  hBkgQ->SetBinContent(1,nNoSoft);  hBkgQ->SetBinContent(2,nSoft); 
+  for(int i=0; i<10; i++){
+    BkgEffCos[i] = BkgEffCos[i] / nEventsData;
+    SigEffCos[i] = SigEffCos[i] / ngenAcceptance[0];
+    
+    BkgEffPtB[i] = BkgEffPtB[i] / nEventsData;
+    SigEffPtB[i] = SigEffPtB[i] / ngenAcceptance[0];
+    
+    BkgEffLxy[i] = BkgEffLxy[i] / nEventsData;
+    SigEffLxy[i] = SigEffLxy[i] / ngenAcceptance[0];
+    
+    BkgEffM[i] = BkgEffM[i] / nEventsData;
+    SigEffM[i] = SigEffM[i] / ngenAcceptance[0];
+    
+    BkgEffTrk[i] = BkgEffTrk[i] / nEventsData;
+    SigEffTrk[i] = SigEffTrk[i] / ngenAcceptance[0];
+  }
+  
+  
+  TGraph * rocCos = new TGraph(10,BkgEffCos,SigEffCos);
+  TCanvas *crocCos = new TCanvas();
+  crocCos->cd();
+  rocCos->SetMarkerStyle(7);
+  rocCos->GetXaxis()->SetTitle("bkg eff. (vtxCL)");
+  rocCos->GetYaxis()->SetTitle("signal eff. (vtxCL)");
+  rocCos->Draw("ap");
+  
+  TGraph * rocPtB = new TGraph(10,BkgEffPtB,SigEffPtB);
+  TCanvas *crocPtB = new TCanvas();
+  crocPtB->cd();
+  rocPtB->SetMarkerStyle(7);
+  rocPtB->GetXaxis()->SetTitle("bkg eff. (PtB)");
+  rocPtB->GetYaxis()->SetTitle("signal eff. (PtB)");
+  rocPtB->Draw("ap");
 
+  TGraph * rocLxy=new TGraph(10,BkgEffLxy,SigEffLxy);
+  TCanvas *crocLxy = new TCanvas();
+  crocLxy->cd();
+  rocLxy->SetMarkerStyle(7);
+  rocLxy->GetXaxis()->SetTitle("bkg eff. (Lxy)");
+  rocLxy->GetYaxis()->SetTitle("signal eff. (Lxy)");
+  rocLxy->Draw("ap");
+  
+  TGraph * rocM=new TGraph(10,BkgEffM,SigEffM);
+  TCanvas *crocM = new TCanvas();
+  crocM->cd();
+  rocM->SetMarkerStyle(7);
+  rocM->GetXaxis()->SetTitle("bkg eff. (M)");
+  rocM->GetYaxis()->SetTitle("signal eff. (M)");
+  rocM->Draw("ap");
 
- std::cout << " Triplet " << nTotal << " Ntriplets1ele " << nbkg << " ele1Trg dz " << nDz << " mll < 5 " << nMll
-	   << " kpt > 0.4 " << nKpt << " Mtrip in [3.5,6] " << nMtri << " VtxCl Prob > 1.e-3 " << nProb 
-	   << " Bcos > 0.9 " << nCos << " ptb > 5 " << nPtB << " Lxy > 4 " << nLxy << std::endl;
+  TGraph * rocTrk=new TGraph(10,BkgEffTrk,SigEffTrk);
+  TCanvas *crocTrk = new TCanvas();
+  crocTrk->cd();
+  rocTrk->SetMarkerStyle(7);
+  rocTrk->GetXaxis()->SetTitle("bkg eff. (Trk)");
+  rocTrk->GetYaxis()->SetTitle("signal eff. (Trk)");
+  rocTrk->Draw("ap");
+  
+  TFile * fout= new TFile("FastPlot.root","RECREATE");
+  hBptGen->Write();
+  hE1ptGen->Write(); 
+  hE2ptGen->Write(); 
+  hKptGen->Write();
+  hPptGen->Write();
 
+  hDReltrk->Write();
+  hDRrecoE->Write();
+  hDRK->Write();
+  hDRP->Write();
+  hDRGlobal->Write();
 
- std::cout << " \n\n Total = " << nTotal
-   //<< " \n Nreco triplets = " << nbkg
-           << " \n NrecoTriplets and tagMu = " << NMutag
-           << " \n Ele1-Trg dz = " << nDz
-           << " \n mll < 5 = " << nMll
-   //<< " \n ll_vtxCL > 1.e-34 = NA"
-           << " \n kpt > 0.4 = " << nKpt
-           << " \n Mtrip in [3.5,6] = " << nMtri
-           << " \n B_vtxCL > 1.e-3 = " << nProb
-           << " \n Bcos > 0.9 = " << nCos
-           << " \n ptB >5  = " << nPtB
-           << " \n Lxy > 4 = " << nLxy << std::endl;
+  hBRecoPt->Write();
+  hE1RecoPt->Write();
+  hE2RecoPt->Write();
+  hKRecoPt->Write();
+  hPRecoPt->Write();
+  
+  hKstarMassReco->Write();
+  hKstarMassGen->Write();
 
+  hllMassReco->Write();
+  hllMassGen->Write();
 
-
- for(int i=0; i<10; i++){
-   BkgEffCos[i]= BkgEffCos[i]/ccdata->GetEntries();
-   SigEffCos[i]=SigEffCos[i]/ngenAcceptance;
-   BkgEffPtB[i]= BkgEffPtB[i]/ccdata->GetEntries();
-   SigEffPtB[i]=SigEffPtB[i]/ngenAcceptance;
-   BkgEffLxy[i]= BkgEffLxy[i]/ccdata->GetEntries();
-   SigEffLxy[i]=SigEffLxy[i]/ngenAcceptance;
-   BkgEffM[i]= BkgEffM[i]/ccdata->GetEntries();
-   SigEffM[i]=SigEffM[i]/ngenAcceptance;
-   BkgEffTrk[i]= BkgEffTrk[i]/ccdata->GetEntries();
-   SigEffTrk[i]=SigEffTrk[i]/ngenAcceptance;
- }
-
- 
- TGraph * rocCos = new TGraph(10,BkgEffCos,SigEffCos);
- TCanvas *crocCos = new TCanvas();
- crocCos->cd();
- rocCos->SetMarkerStyle(7);
- rocCos->GetXaxis()->SetTitle("bkg eff. (vtxCL)");
- rocCos->GetYaxis()->SetTitle("signal eff. (vtxCL)");
- rocCos->Draw("ap");
-
- TGraph * rocPtB = new TGraph(10,BkgEffPtB,SigEffPtB);
- TCanvas *crocPtB = new TCanvas();
- crocPtB->cd();
- rocPtB->SetMarkerStyle(7);
- rocPtB->GetXaxis()->SetTitle("bkg eff. (PtB)");
- rocPtB->GetYaxis()->SetTitle("signal eff. (PtB)");
- rocPtB->Draw("ap");
-
- TGraph * rocLxy=new TGraph(10,BkgEffLxy,SigEffLxy);
- TCanvas *crocLxy = new TCanvas();
- crocLxy->cd();
- rocLxy->SetMarkerStyle(7);
- rocLxy->GetXaxis()->SetTitle("bkg eff. (Lxy)");
- rocLxy->GetYaxis()->SetTitle("signal eff. (Lxy)");
- rocLxy->Draw("ap");
-
- TGraph * rocM=new TGraph(10,BkgEffM,SigEffM);
- TCanvas *crocM = new TCanvas();
- crocM->cd();
- rocM->SetMarkerStyle(7);
- rocM->GetXaxis()->SetTitle("bkg eff. (M)");
- rocM->GetYaxis()->SetTitle("signal eff. (M)");
- rocM->Draw("ap");
-
- TGraph * rocTrk=new TGraph(10,BkgEffTrk,SigEffTrk);
- TCanvas *crocTrk = new TCanvas();
- crocTrk->cd();
- rocTrk->SetMarkerStyle(7);
- rocTrk->GetXaxis()->SetTitle("bkg eff. (Trk)");
- rocTrk->GetYaxis()->SetTitle("signal eff. (Trk)");
- rocTrk->Draw("ap");
-
-TFile * fout= new TFile("FastPlot.root","RECREATE");
- hBptGen->Write();
- hE1ptGen->Write(); 
- hE2ptGen->Write(); 
- hKptGen->Write();
- hDReltrk->Write();
- hDRK->Write();
- hDRrecoE->Write();
- hBRecoPt->Write();
- hE1RecoPt->Write();
- hE2RecoPt->Write();
- hKRecoPt->Write();
-
-
-return 0;
+  return 0;
 } 

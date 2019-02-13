@@ -3,9 +3,11 @@
 #include "HLTAnalysis/TriggerAnalyzer/plugins/SkimAnalyzer.h"
 
 
-float BuMass_ = 5.279;
+float BChargedMass_ = 5.279;
+float B0Mass_ = 5.279;
 float KaonMass_ = 0.493677;
-float KaonStarMass_ = 0.89176; //nominal K*(892) mass => need to change
+float Kaon0StarMass_ = 0.89581; //nominal K*(892) mass => need to change
+//float Kaon0StarMass_ = 0.89176; //nominal K*(892) mass => need to change
 float PionMass_ = 0.139570;
 float MuonMass_ = 0.10565837;
 float ElectronMass_ = 0.5109989e-3;
@@ -212,6 +214,7 @@ SkimAnalyzer::SkimAnalyzer(const edm::ParameterSet& iConfig):
   // t1->Branch("TTrack_min2trk_prob",&TTrack_min2trk_prob);
   t1->Branch("TTrack_XYZ",&TTrack_XYZ); t1->Branch("TTrack_ObjIndex",&TTrack_ObjIndex);
   t1->Branch("TTrack_TrkIndex",&TTrack_TrkIndex); 
+  t1->Branch("TTrack_KstarIndex",&TTrack_KstarIndex); 
   t1->Branch("TTrack_kid",&TTrack_kid);
   t1->Branch("TTrack_piid",&TTrack_piid);
   t1->Branch("TTrack_mll",&TTrack_mll); 
@@ -283,8 +286,8 @@ void SkimAnalyzer::genAnalyze(const edm::Event& iEvent, const edm::EventSetup& i
       
 	  if(debugCOUT) std::cout << " daug " << iD << " pdgID = " << pdgId << " pt = " << partPt << " eta = " << partEta << std::endl;
 
-	  if(partPt < 0.5) continue;
-	  if(std::abs(partEta) > 2.4) continue;
+	  if(partPt < 0.2) continue;
+	  if(std::abs(partEta) > 2.6) continue;
 	  
 	  if(abs(pdgId) == LeptonFinalStateID && genpart_lep1FromB_index < 0)
 	    genpart_lep1FromB_index = iD;
@@ -330,8 +333,8 @@ void SkimAnalyzer::genAnalyze(const edm::Event& iEvent, const edm::EventSetup& i
 
 	  if(debugCOUT) std::cout << " daug " << iD << " pdgID = " << pdgId << " pt = " << partPt << " eta = " << partEta << std::endl;	  
 
-	  if(partPt < 0.5) continue;
-	  if(std::abs(partEta) > 2.4) continue;
+	  if(partPt < 0.2) continue;
+	  if(std::abs(partEta) > 2.6) continue;
 	  
 	  if(abs(pdgId) == LeptonFinalStateID && genpart_lep1FromB_index < 0)
 	    genpart_lep1FromB_index = iD;
@@ -352,8 +355,8 @@ void SkimAnalyzer::genAnalyze(const edm::Event& iEvent, const edm::EventSetup& i
 	      
 	      if(debugCOUT) std::cout << " gdaug " << iD << " pdgID = " << pdgId_gd << " pt = " << partPt_gd << " eta = " << partEta_gd << std::endl;
 
-	      if(partPt_gd < 0.5) continue;
-	      if(std::abs(partEta_gd) > 2.4) continue;
+	      if(partPt_gd < 0.2) continue;
+	      if(std::abs(partEta_gd) > 2.6) continue;
 	      
 	      if(abs(pdgId_gd) == 321) 
 	      genpart_KFromKst_index = igD;
@@ -444,7 +447,7 @@ void SkimAnalyzer::genAnalyze(const edm::Event& iEvent, const edm::EventSetup& i
     genpart_Kst_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_KstFromB_index)->pt()));
     genpart_Kst_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_KstFromB_index)->eta()));
     genpart_Kst_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_KstFromB_index)->phi()));
-    genpart_Kst_PtEtaPhiM.push_back(KaonStarMass_);
+    genpart_Kst_PtEtaPhiM.push_back(Kaon0StarMass_);
 
     genpart_K_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_KstFromB_index)->daughter(genpart_KFromKst_index)->pt()));
     genpart_K_PtEtaPhiM.push_back(float((*genPart)[genpart_B_index].daughter(genpart_KstFromB_index)->daughter(genpart_KFromKst_index)->eta()));
@@ -630,6 +633,36 @@ float SkimAnalyzer::DR(float eta1,float phi1,float eta2, float phi2){
 }
 
 
+int SkimAnalyzer::sharedHits(reco::Track& track1, reco::Track& track2) const{
+
+  int match = 0;
+
+  for (trackingRecHit_iterator hit1 = track1.recHitsBegin(); hit1 != track1.recHitsEnd(); ++hit1){
+    if ( !(*hit1)->isValid() ) continue;
+    DetId id1 = (*hit1)->geographicalId();
+    //if ( id1.det() != DetId::Muon ) continue; //ONLY MUON
+
+    //LogTrace(category_)<<"first ID "<<id1.rawId()<<" "<<(*hit1)->localPosition()<<endl;
+    GlobalPoint pos1 = (*hit1)->globalPosition();
+
+    for (trackingRecHit_iterator hit2 = track2.recHitsBegin(); hit2 != track2.recHitsEnd(); ++hit2) {
+      if ( !(*hit2)->isValid() ) continue;
+
+      DetId id2 = (*hit2)->geographicalId();
+      //if ( id2.det() != DetId::Muon ) continue; //ONLY MUON
+      //          LogTrace(category_)<<"second ID "<<id2.rawId()<< (*hit2)->localPosition()<<endl;
+
+      if (id2.rawId() != id1.rawId() ) continue;
+
+      GlobalPoint pos2 = (*hit2)->globalPosition();
+      if ( ( pos1 - pos2 ).mag()< 10e-5 ) match++;
+    }
+  }
+  return match;
+}
+
+
+
 void SkimAnalyzer::Init(){
 
   vertex_x.clear();  vertex_y.clear();  vertex_z.clear();  
@@ -689,7 +722,8 @@ void SkimAnalyzer::Init(){
   track_vx.clear(); track_vz.clear(); track_vy.clear(); track_mva.clear();
   
   TTrack_PtEtaPhiM.clear(); TTrack_XYZ.clear();  TTrack_cos.clear();
-  TTrack_chi_prob.clear(); TTrack_ObjIndex.clear(); TTrack_TrkIndex.clear(); 
+  TTrack_chi_prob.clear(); TTrack_ObjIndex.clear(); 
+  TTrack_TrkIndex.clear(); TTrack_KstarIndex.clear();
   TTrack_kid.clear(); TTrack_piid.clear();
   TTrack_mll.clear(); 
   TTrack_mKst.clear();
@@ -817,7 +851,7 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
   if(debugCOUT) std::cout << " analyzer => HLT paths  " << std::endl;
 
-  //  if (IsData){    
+  //    if (IsData){    
     std::pair<std::vector<float>, std::vector<std::vector<std::vector<float> > > > trgresult = HLTAnalyze(iEvent, iSetup, HLTPath_, HLTFilter_);
     trigger1=trgresult.first[0]; trigger2=trgresult.first[1]; trigger3=trgresult.first[2];  
     trigger4=trgresult.first[3]; trigger5=trgresult.first[4]; trigger6=trgresult.first[5];   
@@ -1045,7 +1079,10 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       if (ObjPtLargerThanTrack && obj->pt() < trk2->pt()) continue;
 
       float dR_l1l2 = DR(obj->eta(), obj->phi(), trk2->eta(), trk2->phi());
-      if(dR_l1l2 < TrkObjExclusionCone) continue;
+      if(dR_l1l2 < TrkObjExclusionCone && (isKll || LeptonFinalStateID == 13)) continue;
+      // if(!isKll && LeptonFinalStateID == 11 && 1.*sharedHits((*obj), (*trk2)) / obj->numberOfValidHits() > 0.5){
+      // 	std::cout << " >> fraction shared = " << 1.*sharedHits((*obj), (*trk2))/ obj->numberOfValidHits()  << std::endl;
+      // }
 
       vel1.SetPtEtaPhiM(obj->pt(), obj->eta(), obj->phi(), (LeptonFinalStateID == 11) ? ElectronMass_ : MuonMass_);
       vel2.SetPtEtaPhiM(trk2->pt(), trk2->eta(), trk2->phi(), (LeptonFinalStateID == 11) ? ElectronMass_ : MuonMass_);
@@ -1111,6 +1148,7 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   // triplet
   TLorentzVector vK; 
   TLorentzVector vPi;
+  int kstarIndex = 0;
   for(unsigned int iobj=0; iobj<cleanedObjTracks.size(); iobj++){
     auto objtrk = cleanedObjTracks.at(iobj);
     auto pairtrk = cleanedPairTracks.at(iobj);
@@ -1124,7 +1162,8 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	if (trk->pt() < PtKTrack_Cut) continue;
          
 	//isKll
-	if(isKll || !isKll){
+	//if(isKll || !isKll){
+	if(isKll){
 	  if (fabs(trk->dxy(vertex_point))/trk->dxyError() < Ksdxy_Cut) continue;
 
 	  //ele ele kaon
@@ -1179,7 +1218,8 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	  TTrack_eLxy.push_back(err.rerr(Dispbeamspot));
 	  if (EarlyStop) break;
 	}//isKll
-	else if(1 == 2){//K*ll
+	else{//K*ll
+	//	if(1 == 2){
 	  //auto objtrk = cleanedObjTracks.at(iobj);
 	  //auto pairtrk = cleanedPairTracks.at(iobj);
 	  //auto trk = cleanedTracks.at(itrk);
@@ -1188,17 +1228,24 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	    if(iPi == itrk) continue;
 	    auto PiTrk = cleanedTracks.at(iPi); 
 
+	    if (PiTrk->charge() * trk->charge() == 1) continue;
+
 	    if(DR(objtrk->eta(), objtrk->phi(), PiTrk->eta(),PiTrk->phi()) < TrkObjExclusionCone) continue;
 	    if(DR(pairtrk->eta(), pairtrk->phi(), PiTrk->eta(),PiTrk->phi()) < TrkObjExclusionCone) continue;
 	    if(DR(trk->eta(), trk->phi(), PiTrk->eta(),PiTrk->phi()) < TrkObjExclusionCone) continue;
 
+	    if(debugCOUT) std::cout << " loop 4th track " << std::endl;
+
 	    if (PiTrk->pt() < PtKTrack_Cut) continue;
+	    if (std::fabs(PiTrk->eta()) > EtaTrack_Cut) continue;
 	    //maybe yes and also for K track but avoid here
 	    //if (fabs(PiTrk->dxy(vertex_point))/PiTrk->dxyError() < Ksdxy_Cut) continue;
 
 
 	    vK.SetPtEtaPhiM(trk->pt(),trk->eta(),trk->phi(), KaonMass_);
 	    vPi.SetPtEtaPhiM(PiTrk->pt(),PiTrk->eta(),PiTrk->phi(), PionMass_);
+
+	    if(debugCOUT) std::cout << " K* built " << std::endl;
 
 	    if ((vPi+vK).M() > MaxKst_Cut || (vPi+vK).M() < MinKst_Cut) continue;
 	    if ((vPi+vK).Pt() < PtKst_Cut) continue;
@@ -1212,6 +1259,8 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	    // tempTracks.push_back(*tranpair);
 	    tempTracks.push_back(*trantrk);
 	    tempTracks.push_back(*trantrpi);
+
+	    if(debugCOUT) std::cout << " check K* vertex " << std::endl;
 
 	    LLvertex = theKalmanFitter.vertex(tempTracks);
 	    if (!LLvertex.isValid()) continue;
@@ -1227,6 +1276,8 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	    if (tempCos < CosKst_Cut) continue;
 	    if (SLxyKst_Cut > Dispbeamspot.perp()/TMath::Sqrt(err.rerr(Dispbeamspot))) continue;
 
+	    if(debugCOUT) std::cout << " fill K* " << std::endl;
+
 	    tempPtEtaPhiM.clear();
             tempPtEtaPhiM.push_back((vPi+vK).Pt());
             tempPtEtaPhiM.push_back((vPi+vK).Eta());
@@ -1238,12 +1289,17 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	    Kstpair_chi_prob.push_back(ChiSquaredProbability(LLvertex.totalChiSquared(),LLvertex.degreesOfFreedom()));
 	    Kstpair_Lxy.push_back(Dispbeamspot.perp());
 	    Kstpair_eLxy.push_back(err.rerr(Dispbeamspot));
+	    ++kstarIndex;
 
 	    vel1.SetPtEtaPhiM(objtrk->pt(),objtrk->eta(),objtrk->phi(), (LeptonFinalStateID == 11) ? ElectronMass_ : MuonMass_);
 	    vel2.SetPtEtaPhiM(pairtrk->pt(),pairtrk->eta(),pairtrk->phi(), (LeptonFinalStateID == 11) ? ElectronMass_ : MuonMass_);
 
+	    if(debugCOUT) std::cout << " building eeK* mass =  " << (vPi+vK+vel1+vel2).M() << " pT = " << (vel1+vel2+vPi+vK).Pt() << std::endl;
+
 	    if ((vel1+vel2+vPi+vK).M() > MaxBeeKst_Cut || (vPi+vK+vel1+vel2).M() < MinBeeKst_Cut) continue;
             if ((vel1+vel2+vPi+vK).Pt() < PtBeeKst_Cut) continue;
+
+	    if(debugCOUT) std::cout << " eeK* post pT and M  " << std::endl;
 
 	    ///if ok 4tracks fit
 	    tempTracks.clear();
@@ -1252,8 +1308,12 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	    tempTracks.push_back(*trantrk);
 	    tempTracks.push_back(*trantrpi);
 
+	    if(debugCOUT) std::cout << " before eeK* vertex  " << std::endl;
+
 	    LLvertex = theKalmanFitter.vertex(tempTracks);
 	    if (!LLvertex.isValid()) continue;
+
+	    if(debugCOUT) std::cout << " check eeK* vertex " << std::endl;
 
 	    if (ChiSquaredProbability(LLvertex.totalChiSquared(),LLvertex.degreesOfFreedom()) < ProbBeeKst_Cut) continue;
 	    GlobalError errB = LLvertex.positionError();
@@ -1265,6 +1325,8 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	    float tempCosB = vperpB.Dot(pperp)/(vperpB.R()*pperp.R());
 	    if (tempCosB < CosBeeKst_Cut) continue;
 	    if (SLxyBeeKst_Cut > DispbeamspotB.perp()/TMath::Sqrt(errB.rerr(DispbeamspotB))) continue;
+
+	    if(debugCOUT) std::cout << " filling eeK* " << std::endl;
 
 	    tempPtEtaPhiM.clear(); 
 	    tempXYZ.clear();
@@ -1284,6 +1346,7 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
 	    TTrack_ObjIndex.push_back(Epair_ObjIndex.at(iobj));
 	    TTrack_TrkIndex.push_back(Epair_TrkIndex.at(iobj));
+	    TTrack_KstarIndex.push_back(kstarIndex-1);
 	    TTrack_kid.push_back(track_container.at(itrk));
 	    TTrack_piid.push_back(track_container.at(iPi));
 	    TTrack_chi_prob.push_back(ChiSquaredProbability(LLvertex.totalChiSquared(),LLvertex.degreesOfFreedom()));
@@ -1299,7 +1362,7 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       
   //  if (TTrack_chi_prob.size() == 0) Init();
 
-  if(debugCOUT) std::cout << " filling histo genpart_B_index = " << genpart_B_index << std::endl;
+  if(debugCOUT) std::cout << " filling histo genpart_B_index = " << genpart_B_index << " TTrack_cos.size() = " << TTrack_cos.size() << std::endl;
   t1->Fill();
 }
 

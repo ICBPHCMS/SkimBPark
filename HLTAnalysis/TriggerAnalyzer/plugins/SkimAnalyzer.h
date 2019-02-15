@@ -166,6 +166,11 @@ private:
   edm::EDGetToken GenToken_;
   edm::EDGetTokenT<reco::PFClusterCollection> clusters_;
 
+  const edm::EDGetTokenT< std::vector<reco::GsfTrack> > lowPtGsfTracks_;
+  const std::vector<edm::InputTag> mvaSeedTags_;
+  std::vector< edm::EDGetTokenT< edm::ValueMap<float> > >  mvaSeeds_;
+
+
   TTree * t1;
   edm::Service<TFileService> fs;
 
@@ -224,6 +229,15 @@ private:
   float beam_x;
   float beam_y;
   float beam_z;
+
+
+  int ngsfTracks;
+  std::vector<float> gsfTrk_pt;
+  std::vector<float> gsfTrk_eta;
+  std::vector<float> gsfTrk_phi;
+  std::vector<float> gsfTrk_charge;
+  std::vector<float> gsfTrk_seedBDTunb;
+  std::vector<float> gsfTrk_seedBDTbiased;
 
 
   int ntracks;
@@ -324,6 +338,7 @@ private:
   bool IsData, SaveHLT;
   int LeptonFinalStateID;
   bool isKll;
+  bool lookAtpfEle;
 
   float PtTrack_Cut, EtaTrack_Cut;
   float MinChi2Track_Cut, MaxChi2Track_Cut;

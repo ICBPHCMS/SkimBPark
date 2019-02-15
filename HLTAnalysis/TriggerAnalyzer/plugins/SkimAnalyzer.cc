@@ -30,17 +30,24 @@ SkimAnalyzer::SkimAnalyzer(const edm::ParameterSet& iConfig):
   HLTFilter_(iConfig.getParameter<vector<string> >("HLTFilter")),
   HLTPath_(iConfig.getParameter<vector<string> >("HLTPath")),
   GenToken_(consumes<edm::View<reco::GenParticle>>(iConfig.getParameter<edm::InputTag>("gen"))),
-  clusters_ (consumes<reco::PFClusterCollection>(iConfig.getParameter<edm::InputTag>("clusters") ))
+  clusters_ (consumes<reco::PFClusterCollection>(iConfig.getParameter<edm::InputTag>("clusters") )),
+  lowPtGsfTracks_(consumes<std::vector<reco::GsfTrack> >(iConfig.getParameter<edm::InputTag>("lowptgsfTracks"))),
+  mvaSeedTags_(iConfig.getParameter< std::vector<edm::InputTag> >("mvaSeeds"))
   //runParameters(iConfig.getParameter<edm::ParameterSet>("RunParameters"))
-  
 {
   debugCOUT = false;
+
+  for ( const auto& tag : mvaSeedTags_ ){ 
+    mvaSeeds_.push_back( consumes<edm::ValueMap<float> >(tag) ); 
+  }
+
 
   edm::ParameterSet runParameters = iConfig.getParameter<edm::ParameterSet>("RunParameters");     
   IsData = runParameters.getParameter<bool>("Data");
   SaveHLT = runParameters.getParameter<bool>("SaveHLT");
   LeptonFinalStateID = runParameters.getParameter<int>("LeptonFinalStateID");
   isKll = runParameters.getParameter<bool>("IsKll");
+  lookAtpfEle = runParameters.getParameter<bool>("runOnPfEle");
 
   MuTrgMatchCone = runParameters.getParameter<double>("MuTrgMatchCone");
 
@@ -165,6 +172,14 @@ SkimAnalyzer::SkimAnalyzer(const edm::ParameterSet& iConfig):
   t1->Branch("el_trkpt",&el_trkpt); t1->Branch("el_trketa",&el_trketa); 
   t1->Branch("el_trkphi",&el_trkphi);
 
+
+  t1->Branch("ngsfTracks", &ngsfTracks);
+  t1->Branch("gsfTrk_pt", &gsfTrk_pt);
+  t1->Branch("gsfTrk_eta", &gsfTrk_eta);
+  t1->Branch("gsfTrk_phi", &gsfTrk_phi);
+  t1->Branch("gsfTrk_charge", &gsfTrk_charge);
+  t1->Branch("gsfTrk_seedBDTunb", &gsfTrk_seedBDTunb);
+  t1->Branch("gsfTrk_seedBDTbiased", &gsfTrk_seedBDTbiased);
 
   t1->Branch("genpart_B_index", &genpart_B_index);
   t1->Branch("genpart_lep1FromB_index", &genpart_lep1FromB_index);
@@ -675,7 +690,7 @@ void SkimAnalyzer::Init(){
   muon_vz.clear(); muon_iso.clear(); muon_soft.clear(); muon_loose.clear();
   muon_medium.clear(); muon_tight.clear(); muon_trkpt.clear();
   muon_trketa.clear(); muon_trkphi.clear();
- 
+
   el_pt.clear(); el_eta.clear(); el_phi.clear(); el_charge.clear();
   el_vx.clear(); el_vy.clear(); el_vz.clear(); el_dxy.clear(); el_mva_out.clear();
   el_dz.clear();el_edxy.clear(); el_edz.clear(); el_mva_out.clear(); 
@@ -683,6 +698,14 @@ void SkimAnalyzer::Init(){
   el_veto.clear(); el_soft.clear(); el_medium.clear(); el_tight.clear();
   el_trkpt.clear(); el_trketa.clear(); el_trkphi.clear();
      
+  ngsfTracks = 0;
+  gsfTrk_pt.clear();
+  gsfTrk_eta.clear();
+  gsfTrk_phi.clear();
+  gsfTrk_charge.clear();
+  gsfTrk_seedBDTunb.clear();
+  gsfTrk_seedBDTbiased.clear();
+
   TrgObj1_PtEtaPhiCharge.clear(); TrgObj2_PtEtaPhiCharge.clear();
   TrgObj3_PtEtaPhiCharge.clear(); TrgObj4_PtEtaPhiCharge.clear();
   TrgObj5_PtEtaPhiCharge.clear(); TrgObj6_PtEtaPhiCharge.clear();
@@ -754,7 +777,6 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   using namespace reco;
   using namespace trigger;
 
-
   //Get a few collections to apply basic electron ID
   //Get electrons
   edm::Handle<edm::View<reco::GsfElectron> > electrons;
@@ -805,6 +827,22 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   edm::Handle<reco::PFClusterCollection> clusters;
   iEvent.getByToken(clusters_,clusters);
 
+
+  //new lop Pt ele
+  std::vector<edm::Handle<edm::ValueMap<float> > > mvaSeeds;
+  if(!lookAtpfEle){
+    for (const auto& token : mvaSeeds_){ 
+      edm::Handle<edm::ValueMap<float> > h;
+      iEvent.getByToken(token, h); 
+      mvaSeeds.push_back(h);
+    }
+  }
+
+  edm::Handle<std::vector<reco::GsfTrack> > lowPtGsfTracks;
+  if(!lookAtpfEle) iEvent.getByToken(lowPtGsfTracks_, lowPtGsfTracks);
+
+
+
   KalmanVertexFitter theKalmanFitter(false);
   TransientVertex LLvertex;
   
@@ -833,6 +871,24 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
   
   Init();
+
+
+  if(!lookAtpfEle && debugCOUT){
+    //new low Pt ele
+    std::cout << " mvaSeeds.size() = " << mvaSeeds.size() << " gsfSize = " << lowPtGsfTracks->size() << std::endl;
+    for (unsigned int iter=0; iter< mvaSeeds.size(); ++iter){
+      std::cout << "  mvaSeed:           " 
+		<< int( mvaSeeds[iter].isValid() ? mvaSeeds[iter]->size() : -1 ) 
+		<< ", ";
+      if ( mvaSeeds[iter].isValid() && !mvaSeeds[iter]->empty() && lowPtGsfTracks.isValid() ) {
+	reco::GsfTrackRef gsf(lowPtGsfTracks, 0);
+	std::cout << "\"" << mvaSeedTags_[iter].instance() << "\"";
+	if ( gsf.isNonnull() ) { std::cout << "(example value: " << float( (*mvaSeeds[iter])[gsf] ) << ")"; }
+      }
+      std::cout << std::endl;
+    }
+  }
+
 
   if(debugCOUT) std::cout << " analyzer => MC gen  " << std::endl;
 
@@ -985,12 +1041,58 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       //  delete eltrack;
   }
 
- 
+
+  std::vector<std::shared_ptr<reco::GsfTrack> > gsfElTracks;
+  std::vector<unsigned int> gsf_container;
+  std::vector<unsigned int> gsf_id;
+  if(!lookAtpfEle){
+  int gsfeleIndex = 0;
+  if(debugCOUT) std::cout << " lowPtGsfTracks->size() = " << lowPtGsfTracks->size() << std::endl;
+
+  for (std::vector<reco::GsfTrack>::const_iterator gsfT=lowPtGsfTracks->begin(); gsfT!=lowPtGsfTracks->end(); ++gsfT){
+    if(debugCOUT) std::cout << " nuova gsf " << int(gsfT - lowPtGsfTracks->begin()) << " pt = " << gsfT->pt() << std::endl;
+    //if(!gsfT->isValid()) continue;
+
+    if (fabs(gsfT->eta()) > EtaTrack_Cut) { if(debugCOUT) std::cout << " > EtaTrack_Cut " << std::endl; continue;}
+    if (gsfT->pt() < PtEl_Cut) { if(debugCOUT) std::cout << " < PtEl_Cut " << std::endl; continue;}
+    
+    if (SelectedMu_index != -1 ){
+      if (fabs(ZvertexTrg - gsfT->vz()) > ElTrgMuDz_Cut ) { if(debugCOUT) std::cout << " vtxZ " << std::endl; continue;}
+      if ( DR(gsfT->eta(),gsfT->phi(), SelectedTrgObj_PtEtaPhiCharge[1],SelectedTrgObj_PtEtaPhiCharge[2]) < ElTrgExclusionCone) {
+	if(debugCOUT) std::cout << " dR trig " << std::endl;
+	continue;
+      }
+      //if ( DR(el->eta(),el->phi(), SelectedTrgObj_PtEtaPhiCharge[1],SelectedTrgObj_PtEtaPhiCharge[2]) < ElTrgExclusionCone) continue;
+    }
+
+    if(debugCOUT) std::cout << " look at BDT " << std::endl;
+    if(mvaSeeds.size() == 2 && mvaSeeds[0].isValid() && !mvaSeeds[0]->empty() && 
+       mvaSeeds[1].isValid() && !mvaSeeds[1]->empty() && lowPtGsfTracks.isValid()){
+      reco::GsfTrackRef gsf(lowPtGsfTracks, int(gsfT - lowPtGsfTracks->begin()));
+      gsfTrk_seedBDTunb.push_back(float((*mvaSeeds[0])[gsf]));
+      gsfTrk_seedBDTbiased.push_back(float((*mvaSeeds[1])[gsf]));
+    }
+    else continue;
+    ++ngsfTracks;
+    
+    gsfTrk_pt.push_back(gsfT->pt()); 
+    gsfTrk_eta.push_back(gsfT->eta());
+    gsfTrk_phi.push_back(gsfT->phi()); 
+    gsfTrk_charge.push_back(gsfT->charge());
+    
+    auto gsfTrack = std::make_shared<reco::GsfTrack>(*gsfT);
+    gsfElTracks.push_back(gsfTrack); 
+    gsf_container.push_back(gsfeleIndex);
+    ++gsfeleIndex; 
+    gsf_id.push_back(11);
+    //  delete eltrack;
+  }
+  if(debugCOUT) std::cout << " move to cleaned tracks " << std::endl;
+  }
 
   std::vector<std::shared_ptr<reco::Track> > cleanedTracks; 
   std::vector<unsigned int> track_container;
   int trk_index = 0;
-
   if (!UseOnlyBKeeMCForTriplets){
     for (typename vector<reco::Track>::const_iterator trk=tracks->begin(); trk!=tracks->end(); trk++){
       if (!trk->quality(Track::highPurity)) continue;
@@ -1050,8 +1152,329 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     return;
   }
   //create mother ee combination
-  
 
+
+  if(!lookAtpfEle){
+
+    if(debugCOUT) std::cout << " now triplets " << std::endl;
+    // fit track pairs  
+    std::vector<std::shared_ptr<reco::GsfTrack> > cleanedObjTracks;
+    std::vector<std::shared_ptr<reco::GsfTrack> > cleanedPairTracks;
+  
+    TLorentzVector vel1, vel2;
+    std::vector<reco::TransientTrack> tempTracks;
+    std::vector<float> tempPtEtaPhiM, tempXYZ;
+
+    std::vector<std::shared_ptr<reco::GsfTrack> > cleanedObjects; 
+    for(auto & vec: gsfElTracks) cleanedObjects.push_back(vec);  
+
+    if (cleanedObjects.size() == 0) { if(debugCOUT) std::cout << " cleanedObjects.size() == 0 " << "gsfElTracks.size = " << gsfElTracks.size() << std::endl; return;}
+
+    for(unsigned int iobj=0; iobj<cleanedObjects.size(); ++iobj){
+      auto obj = cleanedObjects.at(iobj);
+
+      if(LeptonFinalStateID == 13 && gsf_id.at(iobj) != 13) continue;
+      else if (LeptonFinalStateID == 11 && gsf_id.at(iobj) != 11) continue;
+
+      //the following two for lepton+track+track
+      //for(unsigned int itrk2=0; itrk2<cleanedTracks.size(); itrk2++){
+      //	auto trk2 = cleanedTracks.at(itrk2);
+      //the following two for lepton+lepton+track
+      for(unsigned int itrk2=0; itrk2<cleanedObjects.size(); itrk2++){
+      	auto trk2 = cleanedObjects.at(itrk2);
+	if (obj->charge()*trk2->charge() == 1) continue;
+	if (ObjPtLargerThanTrack && obj->pt() < trk2->pt()) continue;
+
+	float dR_l1l2 = DR(obj->eta(), obj->phi(), trk2->eta(), trk2->phi());
+	if(dR_l1l2 < TrkObjExclusionCone && (isKll || LeptonFinalStateID == 13)) continue;
+	// if(!isKll && LeptonFinalStateID == 11 && 1.*sharedHits((*obj), (*trk2)) / obj->numberOfValidHits() > 0.5){
+	// 	std::cout << " >> fraction shared = " << 1.*sharedHits((*obj), (*trk2))/ obj->numberOfValidHits()  << std::endl;
+	// }
+	
+	vel1.SetPtEtaPhiM(obj->pt(), obj->eta(), obj->phi(), (LeptonFinalStateID == 11) ? ElectronMass_ : MuonMass_);
+	vel2.SetPtEtaPhiM(trk2->pt(), trk2->eta(), trk2->phi(), (LeptonFinalStateID == 11) ? ElectronMass_ : MuonMass_);
+
+
+	if(SelectedMu_index != -1 && LeptonFinalStateID == 13){
+	  if (gsf_id.at(iobj) == 13 && DR(obj->eta(),obj->phi(), SelectedTrgObj_PtEtaPhiCharge[1],SelectedTrgObj_PtEtaPhiCharge[2]) < MuTrgExclusionCone) continue;
+	  if (gsf_id.at(iobj)==13 && fabs(ZvertexTrg- obj->vz()) > MuTrgMuDz_Cut ) continue;
+      }
+      
+	//std::cout << " object_id.at(iobj) = " << object_id.at(iobj) << std::endl;
+	
+	//inv mass on lepton-track pair
+	if ((vel1+vel2).M() > MaxMee_Cut || (vel1+vel2).M() < MinMee_Cut ) continue;   
+	
+	auto tranobj = std::make_shared<reco::TransientTrack>(reco::TransientTrack(*obj,&(*bFieldHandle)));
+	auto trantrk2 = std::make_shared<reco::TransientTrack>(reco::TransientTrack(*trk2,&(*bFieldHandle)));
+	tempTracks.clear(); 
+	tempTracks.push_back(*tranobj); tempTracks.push_back(*trantrk2);
+
+	LLvertex = theKalmanFitter.vertex(tempTracks);
+	if (!LLvertex.isValid()) continue;
+
+	if (ChiSquaredProbability(LLvertex.totalChiSquared(),LLvertex.degreesOfFreedom()) < Probee_Cut)  continue;
+	if (SelectedMu_index != -1 && fabs(ZvertexTrg-LLvertex.position().z()) > EpairZvtx_Cut ) continue;
+
+	GlobalError err = LLvertex.positionError();
+	GlobalPoint Dispbeamspot(-1*( (theBeamSpot->x0() - LLvertex.position().x()) + (LLvertex.position().z()-theBeamSpot->z0()) * theBeamSpot->dxdz()), 
+				 -1*( (theBeamSpot->y0() - LLvertex.position().y())+ (LLvertex.position().z()-theBeamSpot->z0()) * theBeamSpot->dydz()), 0);
+	
+	math::XYZVector pperp((vel1+vel2).Px(),(vel1+vel2).Py(),0);
+	math::XYZVector vperp(Dispbeamspot.x(),Dispbeamspot.y(),0.);
+	float tempCos = vperp.Dot(pperp)/(vperp.R()*pperp.R());
+	if (tempCos < Cosee_Cut) continue;
+	
+	cleanedObjTracks.push_back(obj);
+	cleanedPairTracks.push_back(trk2);
+	Epair_ObjIndex.push_back(gsf_container.at(iobj));
+	//if lep + track+track
+	//Epair_TrkIndex.push_back(track_container.at(itrk2));
+	//if lep + lep +track
+	Epair_TrkIndex.push_back(gsf_container.at(itrk2));
+	Epair_ObjId.push_back(gsf_id.at(iobj));   
+
+	tempPtEtaPhiM.clear(); tempXYZ.clear();
+	tempPtEtaPhiM.push_back((vel1+vel2).Pt()); tempPtEtaPhiM.push_back((vel1+vel2).Eta());
+	tempPtEtaPhiM.push_back((vel1+vel2).Phi()); tempPtEtaPhiM.push_back((vel1+vel2).M());
+	tempXYZ.push_back(LLvertex.position().x());  tempXYZ.push_back(LLvertex.position().y()); 
+	tempXYZ.push_back(LLvertex.position().z());
+	Epair_PtEtaPhiM.push_back(tempPtEtaPhiM); Epair_XYZ.push_back(tempXYZ); 
+	Epair_cos.push_back(tempCos);
+	Epair_chi_prob.push_back(ChiSquaredProbability(LLvertex.totalChiSquared(),LLvertex.degreesOfFreedom())); 	
+	Epair_Lxy.push_back(Dispbeamspot.perp());
+	Epair_eLxy.push_back(err.rerr(Dispbeamspot));      
+      }// cleanedTracks    
+    }//cleaned objects
+     
+
+    if (SaveOnlyEPairTracks) {
+      t1->Fill(); 
+      if(debugCOUT) std::cout << " SaveOnlyEPairTracks " << std::endl;
+      return;
+    }
+
+    // triplet
+    TLorentzVector vK; 
+    TLorentzVector vPi;
+    int kstarIndex = 0;
+    for(unsigned int iobj=0; iobj<cleanedObjTracks.size(); iobj++){
+      auto objtrk = cleanedObjTracks.at(iobj);
+      auto pairtrk = cleanedPairTracks.at(iobj);
+ 
+      for(unsigned int itrk=0; itrk<cleanedTracks.size(); itrk++){
+	auto trk = cleanedTracks.at(itrk);
+
+	if(DR(objtrk->eta(), objtrk->phi(), trk->eta(),trk->phi()) < TrkObjExclusionCone) continue;
+	if(DR(pairtrk->eta(), pairtrk->phi(), trk->eta(),trk->phi()) < TrkObjExclusionCone) continue;
+
+	if (trk->pt() < PtKTrack_Cut) continue;
+         
+	//isKll
+	//if(isKll || !isKll){
+	if(isKll){
+	  if (fabs(trk->dxy(vertex_point))/trk->dxyError() < Ksdxy_Cut) continue;
+
+	  //ele ele kaon
+	  vel1.SetPtEtaPhiM(objtrk->pt(),objtrk->eta(),objtrk->phi(), (LeptonFinalStateID == 11) ? ElectronMass_ : MuonMass_);
+	  vel2.SetPtEtaPhiM(pairtrk->pt(),pairtrk->eta(),pairtrk->phi(), (LeptonFinalStateID == 11) ? ElectronMass_ : MuonMass_);
+	  vK.SetPtEtaPhiM(trk->pt(),trk->eta(),trk->phi(), KaonMass_);
+	  
+	  if ((vel1+vel2+vK).M() > MaxMB_Cut || (vel1+vel2+vK).M() < MinMB_Cut) continue;
+	  if ((vel1+vel2+vK).Pt() < PtB_Cut) continue;
+	  
+	  auto tranobj = std::make_shared<reco::TransientTrack>(reco::TransientTrack(*objtrk,&(*bFieldHandle)));
+	  auto tranpair = std::make_shared<reco::TransientTrack>(reco::TransientTrack(*pairtrk,&(*bFieldHandle)));
+	  auto trantrk = std::make_shared<reco::TransientTrack>(reco::TransientTrack(*trk,&(*bFieldHandle)));
+	  tempTracks.clear();
+	  tempTracks.push_back(*tranobj); 
+	  tempTracks.push_back(*tranpair);
+	  tempTracks.push_back(*trantrk);
+	  
+	  LLvertex = theKalmanFitter.vertex(tempTracks);
+	  if (!LLvertex.isValid()) continue;
+	  
+	  if (ChiSquaredProbability(LLvertex.totalChiSquared(),LLvertex.degreesOfFreedom()) < ProbeeK_Cut) continue;
+	  GlobalError err = LLvertex.positionError();
+	  GlobalPoint Dispbeamspot( -1 * ((theBeamSpot->x0()-LLvertex.position().x()) + (LLvertex.position().z()-theBeamSpot->z0()) * theBeamSpot->dxdz()),
+				    -1 * ((theBeamSpot->y0()-LLvertex.position().y()) + (LLvertex.position().z()-theBeamSpot->z0()) * theBeamSpot->dydz()), 0);
+	  
+	  math::XYZVector pperp((vel1+vel2+vK).Px(),(vel1+vel2+vK).Py(), 0);
+	  math::XYZVector vperp(Dispbeamspot.x(),Dispbeamspot.y(), 0.);
+	  float tempCos = vperp.Dot(pperp)/(vperp.R()*pperp.R());
+	  if (tempCos < CoseeK_Cut) continue;
+	  if (SLxy_Cut > Dispbeamspot.perp()/TMath::Sqrt(err.rerr(Dispbeamspot))) continue;
+	  
+	  //std::cout << " found triplet " << std::endl;
+	  
+	  tempPtEtaPhiM.clear(); tempXYZ.clear();
+	  tempPtEtaPhiM.push_back((vel1+vel2+vK).Pt());
+	  tempPtEtaPhiM.push_back((vel1+vel2+vK).Eta()); 
+	  tempPtEtaPhiM.push_back((vel1+vel2+vK).Phi());
+	  tempPtEtaPhiM.push_back((vel1+vel2+vK).M());       
+	  TTrack_PtEtaPhiM.push_back(tempPtEtaPhiM);
+	  tempXYZ.push_back(LLvertex.position().x());
+	  tempXYZ.push_back(LLvertex.position().y());
+	  tempXYZ.push_back(LLvertex.position().z());
+	  TTrack_ObjId.push_back(Epair_ObjId.at(iobj));
+	  TTrack_XYZ.push_back(tempXYZ); 
+	  TTrack_mll.push_back((vel1+vel2).M());
+	  TTrack_ObjIndex.push_back(Epair_ObjIndex.at(iobj)); 
+	  TTrack_TrkIndex.push_back(Epair_TrkIndex.at(iobj)); 
+	  TTrack_kid.push_back(track_container.at(itrk));
+	  TTrack_chi_prob.push_back(ChiSquaredProbability(LLvertex.totalChiSquared(),LLvertex.degreesOfFreedom()));
+	  TTrack_cos.push_back(tempCos);
+	  TTrack_Lxy.push_back(Dispbeamspot.perp());
+	  TTrack_eLxy.push_back(err.rerr(Dispbeamspot));
+	  if (EarlyStop) break;
+	}//isKll
+	else{//K*ll
+	//	if(1 == 2){
+	  //auto objtrk = cleanedObjTracks.at(iobj);
+	  //auto pairtrk = cleanedPairTracks.at(iobj);
+	  //auto trk = cleanedTracks.at(itrk);
+
+	  for(unsigned int iPi=0; iPi<cleanedTracks.size(); ++iPi){
+	    if(iPi == itrk) continue;
+	    auto PiTrk = cleanedTracks.at(iPi); 
+
+	    if (PiTrk->charge() * trk->charge() == 1) continue;
+
+	    if(DR(objtrk->eta(), objtrk->phi(), PiTrk->eta(),PiTrk->phi()) < TrkObjExclusionCone) continue;
+	    if(DR(pairtrk->eta(), pairtrk->phi(), PiTrk->eta(),PiTrk->phi()) < TrkObjExclusionCone) continue;
+	    if(DR(trk->eta(), trk->phi(), PiTrk->eta(),PiTrk->phi()) < TrkObjExclusionCone) continue;
+
+	    if(debugCOUT) std::cout << " loop 4th track " << std::endl;
+
+	    if (PiTrk->pt() < PtKTrack_Cut) continue;
+	    if (std::fabs(PiTrk->eta()) > EtaTrack_Cut) continue;
+	    //maybe yes and also for K track but avoid here
+	    //if (fabs(PiTrk->dxy(vertex_point))/PiTrk->dxyError() < Ksdxy_Cut) continue;
+
+
+	    vK.SetPtEtaPhiM(trk->pt(),trk->eta(),trk->phi(), KaonMass_);
+	    vPi.SetPtEtaPhiM(PiTrk->pt(),PiTrk->eta(),PiTrk->phi(), PionMass_);
+
+	    if(debugCOUT) std::cout << " K* built " << std::endl;
+
+	    if ((vPi+vK).M() > MaxKst_Cut || (vPi+vK).M() < MinKst_Cut) continue;
+	    if ((vPi+vK).Pt() < PtKst_Cut) continue;
+
+	    auto tranobj = std::make_shared<reco::TransientTrack>(reco::TransientTrack(*objtrk,&(*bFieldHandle)));
+	    auto tranpair = std::make_shared<reco::TransientTrack>(reco::TransientTrack(*pairtrk,&(*bFieldHandle)));
+	    auto trantrk = std::make_shared<reco::TransientTrack>(reco::TransientTrack(*trk,&(*bFieldHandle)));
+	    auto trantrpi = std::make_shared<reco::TransientTrack>(reco::TransientTrack(*PiTrk,&(*bFieldHandle)));
+	    tempTracks.clear();
+	    // tempTracks.push_back(*tranobj);
+	    // tempTracks.push_back(*tranpair);
+	    tempTracks.push_back(*trantrk);
+	    tempTracks.push_back(*trantrpi);
+
+	    if(debugCOUT) std::cout << " check K* vertex " << std::endl;
+
+	    LLvertex = theKalmanFitter.vertex(tempTracks);
+	    if (!LLvertex.isValid()) continue;
+
+	    if (ChiSquaredProbability(LLvertex.totalChiSquared(),LLvertex.degreesOfFreedom()) < ProbKst_Cut) continue;
+	    GlobalError err = LLvertex.positionError();
+	    GlobalPoint Dispbeamspot( -1 * ((theBeamSpot->x0()-LLvertex.position().x()) + (LLvertex.position().z()-theBeamSpot->z0()) * theBeamSpot->dxdz()),
+				      -1 * ((theBeamSpot->y0()-LLvertex.position().y()) + (LLvertex.position().z()-theBeamSpot->z0()) * theBeamSpot->dydz()), 0);
+
+	    math::XYZVector pperp((vPi+vK).Px(),(vPi+vK).Py(), 0);
+	    math::XYZVector vperp(Dispbeamspot.x(),Dispbeamspot.y(), 0.);
+	    float tempCos = vperp.Dot(pperp)/(vperp.R()*pperp.R());
+	    if (tempCos < CosKst_Cut) continue;
+	    if (SLxyKst_Cut > Dispbeamspot.perp()/TMath::Sqrt(err.rerr(Dispbeamspot))) continue;
+
+	    if(debugCOUT) std::cout << " fill K* " << std::endl;
+
+	    tempPtEtaPhiM.clear();
+            tempPtEtaPhiM.push_back((vPi+vK).Pt());
+            tempPtEtaPhiM.push_back((vPi+vK).Eta());
+            tempPtEtaPhiM.push_back((vPi+vK).Phi());
+            tempPtEtaPhiM.push_back((vPi+vK).M());
+
+	    Kstpair_PtEtaPhiM.push_back(tempPtEtaPhiM); 
+	    Kstpair_cos.push_back(tempCos);
+	    Kstpair_chi_prob.push_back(ChiSquaredProbability(LLvertex.totalChiSquared(),LLvertex.degreesOfFreedom()));
+	    Kstpair_Lxy.push_back(Dispbeamspot.perp());
+	    Kstpair_eLxy.push_back(err.rerr(Dispbeamspot));
+	    ++kstarIndex;
+
+	    vel1.SetPtEtaPhiM(objtrk->pt(),objtrk->eta(),objtrk->phi(), (LeptonFinalStateID == 11) ? ElectronMass_ : MuonMass_);
+	    vel2.SetPtEtaPhiM(pairtrk->pt(),pairtrk->eta(),pairtrk->phi(), (LeptonFinalStateID == 11) ? ElectronMass_ : MuonMass_);
+
+	    if(debugCOUT) std::cout << " building eeK* mass =  " << (vPi+vK+vel1+vel2).M() << " pT = " << (vel1+vel2+vPi+vK).Pt() << std::endl;
+
+	    if ((vel1+vel2+vPi+vK).M() > MaxBeeKst_Cut || (vPi+vK+vel1+vel2).M() < MinBeeKst_Cut) continue;
+            if ((vel1+vel2+vPi+vK).Pt() < PtBeeKst_Cut) continue;
+
+	    if(debugCOUT) std::cout << " eeK* post pT and M  " << std::endl;
+
+	    ///if ok 4tracks fit
+	    tempTracks.clear();
+	    tempTracks.push_back(*tranobj);
+	    tempTracks.push_back(*tranpair);
+	    tempTracks.push_back(*trantrk);
+	    tempTracks.push_back(*trantrpi);
+
+	    if(debugCOUT) std::cout << " before eeK* vertex  " << std::endl;
+
+	    LLvertex = theKalmanFitter.vertex(tempTracks);
+	    if (!LLvertex.isValid()) continue;
+
+	    if(debugCOUT) std::cout << " check eeK* vertex " << std::endl;
+
+	    if (ChiSquaredProbability(LLvertex.totalChiSquared(),LLvertex.degreesOfFreedom()) < ProbBeeKst_Cut) continue;
+	    GlobalError errB = LLvertex.positionError();
+	    GlobalPoint DispbeamspotB( -1 * ((theBeamSpot->x0()-LLvertex.position().x()) + (LLvertex.position().z()-theBeamSpot->z0()) * theBeamSpot->dxdz()),
+				      -1 * ((theBeamSpot->y0()-LLvertex.position().y()) + (LLvertex.position().z()-theBeamSpot->z0()) * theBeamSpot->dydz()), 0);
+
+	    math::XYZVector pperpB((vPi+vel1+vel2+vK).Px(),(vel1+vel2+vPi+vK).Py(), 0);
+	    math::XYZVector vperpB(DispbeamspotB.x(),DispbeamspotB.y(), 0.);
+	    float tempCosB = vperpB.Dot(pperp)/(vperpB.R()*pperp.R());
+	    if (tempCosB < CosBeeKst_Cut) continue;
+	    if (SLxyBeeKst_Cut > DispbeamspotB.perp()/TMath::Sqrt(errB.rerr(DispbeamspotB))) continue;
+
+	    if(debugCOUT) std::cout << " filling eeK* " << std::endl;
+
+	    tempPtEtaPhiM.clear(); 
+	    tempXYZ.clear();
+	    tempPtEtaPhiM.push_back((vel1+vel2+vPi+vK).Pt());
+	    tempPtEtaPhiM.push_back((vel1+vel2+vPi+vK).Eta());
+	    tempPtEtaPhiM.push_back((vel1+vel2+vPi+vK).Phi());
+	    tempPtEtaPhiM.push_back((vel1+vel2+vPi+vK).M());
+	    TTrack_PtEtaPhiM.push_back(tempPtEtaPhiM);
+
+	    tempXYZ.push_back(LLvertex.position().x());
+	    tempXYZ.push_back(LLvertex.position().y());
+	    tempXYZ.push_back(LLvertex.position().z());
+	    TTrack_ObjId.push_back(Epair_ObjId.at(iobj));
+	    TTrack_XYZ.push_back(tempXYZ); 
+	    TTrack_mll.push_back((vel1+vel2).M());
+	    TTrack_mKst.push_back((vPi+vK).M());
+
+	    TTrack_ObjIndex.push_back(Epair_ObjIndex.at(iobj));
+	    TTrack_TrkIndex.push_back(Epair_TrkIndex.at(iobj));
+	    TTrack_KstarIndex.push_back(kstarIndex-1);
+	    TTrack_kid.push_back(track_container.at(itrk));
+	    TTrack_piid.push_back(track_container.at(iPi));
+	  
+	    TTrack_chi_prob.push_back(ChiSquaredProbability(LLvertex.totalChiSquared(),LLvertex.degreesOfFreedom()));
+	    TTrack_cos.push_back(tempCosB);
+	    TTrack_Lxy.push_back(DispbeamspotB.perp());
+	    TTrack_eLxy.push_back(errB.rerr(DispbeamspotB));
+
+	  if (EarlyStop) break;
+	  }//4th track
+	}//Kst
+      }// tracks 3rd 
+  }// objects l1 and l2      
+  
+  }// lookAtGsfTracks
+
+  
+  if(lookAtpfEle){
   // fit track pairs  
   std::vector<std::shared_ptr<reco::Track> > cleanedObjTracks;
   std::vector<std::shared_ptr<reco::Track> > cleanedPairTracks;
@@ -1358,8 +1781,9 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	  }//4th track
 	}//Kst
       }// tracks 3rd 
-  }// objects l1 and l2
-      
+  }// objects l1 and l2      
+  }//lookAtPfEle
+
   //  if (TTrack_chi_prob.size() == 0) Init();
 
   if(debugCOUT) std::cout << " filling histo genpart_B_index = " << genpart_B_index << " TTrack_cos.size() = " << TTrack_cos.size() << std::endl;

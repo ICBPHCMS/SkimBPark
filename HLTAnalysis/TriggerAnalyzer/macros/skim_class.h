@@ -85,6 +85,15 @@ public :
    vector<float>   *el_trkpt;
    vector<float>   *el_trketa;
 
+   UInt_t ngsfTracks;
+   vector<float>   *gsfTrk_pt;
+   vector<float>   *gsfTrk_eta;
+   vector<float>   *gsfTrk_phi;
+   vector<float>   *gsfTrk_charge;
+   vector<float>   *gsfTrk_seedBDTunb;
+   vector<float>   *gsfTrk_seedBDTbiased;
+
+
    /* vector<float>   *genpart_pt; */
    /* vector<float>   *genpart_phi; */
    /* vector<float>   *genpart_eta; */
@@ -165,12 +174,17 @@ public :
    vector<vector<float> > *TTrack_XYZ;
    vector<float>   *TTrack_ObjIndex;
    vector<float>   *TTrack_TrkIndex;
+   vector<float>   *TTrack_KstarIndex;
    vector<float>   *TTrack_kid;
+   vector<float>   *TTrack_piid;
    vector<float>   *TTrack_mll;
+   vector<float>   *TTrack_mKst;
    vector<float>   *TTrack_cos;
    vector<float>   *TTrack_Lxy;
    vector<float>   *TTrack_eLxy;
    vector<unsigned int> *TTrack_ObjId;
+   vector<vector<float> > *Kstpair_PtEtaPhiM;
+   vector<float>   *Kstpair_chi_prob;
 
    // List of branches
    TBranch        *b_event;   //!
@@ -238,6 +252,16 @@ public :
    TBranch        *b_el_trkphi;   //!
    TBranch        *b_el_trkpt;   //!
    TBranch        *b_el_trketa;   //!
+
+   TBranch        *b_ngsfTracks;
+   TBranch        *b_gsfTrk_pt;
+   TBranch        *b_gsfTrk_eta;
+   TBranch        *b_gsfTrk_phi;
+   TBranch        *b_gsfTrk_charge;
+   TBranch        *b_gsfTrk_seedBDTunb;
+   TBranch        *b_gsfTrk_seedBDTbiased;
+
+
    /* TBranch        *b_genpart_pt;   //! */
    /* TBranch        *b_genpart_phi;   //! */
    /* TBranch        *b_genpart_eta;   //! */
@@ -317,12 +341,17 @@ public :
    TBranch        *b_TTrack_XYZ;   //!
    TBranch        *b_TTrack_ObjIndex;   //!
    TBranch        *b_TTrack_TrkIndex;   //!
+   TBranch        *b_TTrack_KstarIndex;   //!
    TBranch        *b_TTrack_kid;   //!
+   TBranch        *b_TTrack_piid;   //!
    TBranch        *b_TTrack_mll;   //!
+   TBranch        *b_TTrack_mKst;   //!
    TBranch        *b_TTrack_cos;   //!
    TBranch        *b_TTrack_Lxy;   //!
    TBranch        *b_TTrack_eLxy;   //!
    TBranch        *b_TTrack_ObjId;   //!
+   TBranch        *b_Kstpair_PtEtaPhiM;   //!
+   TBranch        *b_Kstpair_chi_prob;
 
    skim_class(TTree *tree=0);
    virtual ~skim_class();
@@ -415,6 +444,13 @@ void skim_class::Init(TTree *tree)
    el_trkpt = 0;
    el_trketa = 0;
 
+   ngsfTracks = 0;
+   gsfTrk_pt = 0;
+   gsfTrk_eta = 0;
+   gsfTrk_phi = 0;
+   gsfTrk_charge = 0;
+   gsfTrk_seedBDTunb = 0;
+   gsfTrk_seedBDTbiased = 0;
 
    genpart_B_index = -1;
    genpart_lep1FromB_index = -1;
@@ -496,12 +532,18 @@ void skim_class::Init(TTree *tree)
    TTrack_XYZ = 0;
    TTrack_ObjIndex = 0;
    TTrack_TrkIndex = 0;
+   TTrack_KstarIndex = 0;
    TTrack_kid = 0;
+   TTrack_piid = 0;
    TTrack_mll = 0;
+   TTrack_mKst = 0;
    TTrack_cos = 0;
    TTrack_Lxy = 0;
    TTrack_eLxy = 0;
    TTrack_ObjId = 0;
+   Kstpair_PtEtaPhiM = 0;
+   Kstpair_chi_prob = 0;
+
    // Set branch addresses and branch pointers
    if (!tree) return;
    fChain = tree;
@@ -573,6 +615,15 @@ void skim_class::Init(TTree *tree)
    fChain->SetBranchAddress("el_trkphi", &el_trkphi, &b_el_trkphi);
    fChain->SetBranchAddress("el_trkpt", &el_trkpt, &b_el_trkpt);
    fChain->SetBranchAddress("el_trketa", &el_trketa, &b_el_trketa);
+
+   fChain->SetBranchAddress("ngsfTracks", &ngsfTracks, &b_ngsfTracks);
+   fChain->SetBranchAddress("gsfTrk_pt", &gsfTrk_pt, &b_gsfTrk_pt);
+   fChain->SetBranchAddress("gsfTrk_eta", &gsfTrk_eta, &b_gsfTrk_eta);
+   fChain->SetBranchAddress("gsfTrk_phi", &gsfTrk_phi, &b_gsfTrk_phi);
+   fChain->SetBranchAddress("gsfTrk_charge", &gsfTrk_charge, &b_gsfTrk_charge);
+   fChain->SetBranchAddress("gsfTrk_seedBDTunb", &gsfTrk_seedBDTunb, &b_gsfTrk_seedBDTunb);
+   fChain->SetBranchAddress("gsfTrk_seedBDTbiased", &gsfTrk_seedBDTbiased, &b_gsfTrk_seedBDTbiased);
+
    /* fChain->SetBranchAddress("genpart_pt", &genpart_pt, &b_genpart_pt); */
    /* fChain->SetBranchAddress("genpart_phi", &genpart_phi, &b_genpart_phi); */
    /* fChain->SetBranchAddress("genpart_eta", &genpart_eta, &b_genpart_eta); */
@@ -653,12 +704,17 @@ void skim_class::Init(TTree *tree)
    fChain->SetBranchAddress("TTrack_XYZ", &TTrack_XYZ, &b_TTrack_XYZ);
    fChain->SetBranchAddress("TTrack_ObjIndex", &TTrack_ObjIndex, &b_TTrack_ObjIndex);
    fChain->SetBranchAddress("TTrack_TrkIndex", &TTrack_TrkIndex, &b_TTrack_TrkIndex);
+   fChain->SetBranchAddress("TTrack_KstarIndex", &TTrack_KstarIndex, &b_TTrack_KstarIndex);
    fChain->SetBranchAddress("TTrack_kid", &TTrack_kid, &b_TTrack_kid);
+   fChain->SetBranchAddress("TTrack_piid", &TTrack_piid, &b_TTrack_piid);
    fChain->SetBranchAddress("TTrack_mll", &TTrack_mll, &b_TTrack_mll);
+   fChain->SetBranchAddress("TTrack_mKst", &TTrack_mKst, &b_TTrack_mKst);
    fChain->SetBranchAddress("TTrack_cos", &TTrack_cos, &b_TTrack_cos);
    fChain->SetBranchAddress("TTrack_Lxy", &TTrack_Lxy, &b_TTrack_Lxy);
    fChain->SetBranchAddress("TTrack_eLxy", &TTrack_eLxy, &b_TTrack_eLxy);
    fChain->SetBranchAddress("TTrack_ObjId", &TTrack_ObjId, &b_TTrack_ObjId);
+   fChain->SetBranchAddress("Kstpair_PtEtaPhiM", &Kstpair_PtEtaPhiM, &b_Kstpair_PtEtaPhiM);
+   fChain->SetBranchAddress("Kstpair_chi_prob", &Kstpair_chi_prob, &b_Kstpair_chi_prob);
    Notify();
 }
 

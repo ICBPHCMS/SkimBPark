@@ -1069,7 +1069,7 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     if(mvaSeeds.size() == 2 && mvaSeeds[0].isValid() && !mvaSeeds[0]->empty() && 
        mvaSeeds[1].isValid() && !mvaSeeds[1]->empty() && lowPtGsfTracks.isValid()){
       reco::GsfTrackRef gsf(lowPtGsfTracks, int(gsfT - lowPtGsfTracks->begin()));
-      if(float((*mvaSeeds[0])[gsf]) < 3.5) continue;
+
       gsfTrk_seedBDTunb.push_back(float((*mvaSeeds[0])[gsf]));
       gsfTrk_seedBDTbiased.push_back(float((*mvaSeeds[1])[gsf]));
     }
@@ -1176,6 +1176,9 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
       if(LeptonFinalStateID == 13 && gsf_id.at(iobj) != 13) continue;
       else if (LeptonFinalStateID == 11 && gsf_id.at(iobj) != 11) continue;
+
+      if(gsfTrk_seedBDTunb.at(iobj) < 3.5) continue;
+
 
       //the following two for lepton+track+track
       //for(unsigned int itrk2=0; itrk2<cleanedTracks.size(); itrk2++){

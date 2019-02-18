@@ -38,12 +38,12 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
   TChain *ccdata = new TChain("demo/mytree");
 
   if(!isKstar){
-    ccdata->Add("fileFromTheSkim_onDATA.root");
-    ccmc->Add("fileFromTheSim_onMC_Kee.root");
+    ccdata->Add("../test/outputBSkim_dataGeorge_test_lowPtele.root");
+    ccmc->Add("../test/outputBSkim_KeeVince_test_lowPtele.root");
   }
   else{
-    ccmc->Add("fileFromTheSkim_onDATA.root");
-    ccdata->Add("fileFromTheSim_onMC_K*ee.root");
+    ccmc->Add("../test/outputBSkim_KsteeVince_test_lowPtele.root");
+    ccdata->Add("../test/outputBSkim_dataGeorge_test_lowPtele.root");
   }
   skim_class mc;
   mc.Init(ccmc);
@@ -118,13 +118,13 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
 
   float dRMCmatching_val = 0.06;
   float dzProbeTagMuon_val = 0.3;
-  float bdt_val = 3.5;
-  float mllCut_val = 5.;
-  float k0starMassdiff_minval = 0.8; //20MeV in PDG error is 0.2MeV
-  float k0starMassdiff_maxval = 1.1; //20MeV in PDG error is 0.2MeV
-  float pTK_val = 0.4;
-  float mBmax_val = 6.;
-  float mBmin_val = 4.1;
+  float bdt_val = 6.5;
+  float mllCut_val = 100.; //5.;
+  float k0starMassdiff_minval = 0.;  // 0.8; //20MeV in PDG error is 0.2MeV
+  float k0starMassdiff_maxval = 100.; //1.1; //20MeV in PDG error is 0.2MeV
+  float pTK_val = 0.; //0.4;
+  float mBmax_val = 100; //6.;
+  float mBmin_val = 0.; //4.1;
   float vtxCLB_val = 1.e-3;
   float cosAlpha_val = 0.9;
   float pTB_val = 5.;
@@ -255,6 +255,8 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
        dR_BTDbiasednoPE[ij] = -1;
      }
 
+
+     //     std::cout << " triplette size = " << mc.TTrack_cos->size() << std::endl;
      for (unsigned int iB=0; iB<mc.TTrack_cos->size(); iB++)  {
        if (mc.TTrack_ObjId->at(iB) != 11) continue;
        //std::cout << " >> mc.TTrack_ObjId->at(iB) = " << mc.TTrack_ObjId->at(iB) << std::endl;
@@ -423,6 +425,7 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
     if(CutMatch[0]) { CutMuTag[0] = true;   ++nTrip_matched_MuTag[0];}
     if(CutMatch[1]) { CutMuTag[1] = true;  ++nTrip_matched_MuTag[2];}
   
+    /*
     if(CutMuTag[0] && fabs(mc.muon_vz->at(mc.SelectedMu_index) - mc.gsfTrk_vz->at(recoE[0]) ) <  dzProbeTagMuon_val) {
       CutDz[0] = true;
       ++ndZ_cut[0];
@@ -431,6 +434,10 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
       CutDz[1] = true;
       ++ndZ_cut[2];
     }
+    */
+
+    if(CutMuTag[0]) CutDz[0] = true; 
+    if(CutMuTag[1]) CutDz[1] = true; 
 
 
     if( CutDz[0] && (vrel+vreltrk).M() < mllCut_val) {
@@ -540,7 +547,7 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
 
   for(int ij=0; ij<3; ++ij){
     if(ij == 0) std::cout << "\n  K* with charge exchange " << std::endl;
-    else if(ij == 2) std::cout << "\n  K* withOUT charge exchange " << std::endl;
+    //else if(ij == 2) std::cout << "\n  K* withOUT charge exchange " << std::endl;
     else continue;
 
     std::cout << " Ngen = " << ngen[ij] 
@@ -558,6 +565,8 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
 	      << " \n ptB > 5  = " << npTB_cut[ij]
 	      << " \n Lxy > 4 = " << nIPSB_cut[ij] << std::endl;
   }
+
+  isKstar = 0;
 
   //bakg
   float nEventsData = ccdata->GetEntries();
@@ -604,13 +613,14 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
     if( data.TTrack_cos->size() <= 0) continue; 
     Triplet[0] = true;
     
+
     for (int ivtx=0; ivtx<data.TTrack_cos->size(); ivtx++){
       if (data.TTrack_ObjId->at(ivtx) != 11){ 
-	//  std::cout << " data.TTrack_ObjId->at(ivtx) = " << data.TTrack_ObjId->at(ivtx) << std::endl; 
+	//std::cout << " data.TTrack_ObjId->at(ivtx) = " << data.TTrack_ObjId->at(ivtx) << std::endl; 
 	continue;
       }
 
-
+ 
       int recoEd = data.TTrack_ObjIndex->at(ivtx);
       int trkEld = data.TTrack_TrkIndex->at(ivtx);
 
@@ -618,36 +628,36 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
       float bdtbiased = data.gsfTrk_seedBDTbiased->at(recoEd);
       bool found[2] = {true, true}; 
 
+      float dR_ele1ele2 = DR( data.gsfTrk_eta->at(recoEd), data.gsfTrk_phi->at(recoEd), data.gsfTrk_eta->at(trkEld), data.gsfTrk_phi->at(trkEld));
+      if(dR_ele1ele2 > 0.02) { /*std::cout << " dR_ele1ele2 = " << dR_ele1ele2 << std::endl; */ Triplet[1] = true;}
+      else found[1] = false;
+
+
+      for(int ij=0; ij<100; ++ij){
+	if(found[0] && bdt > BDT_cuts[ij]) BDT_found[ij] = true;
+	if(found[0] && bdtbiased > BDT_cuts[ij]) BDTbiased_found[ij] = true;
+	if(found[1] && bdt > BDT_cuts[ij]) BDTnoPE_found[ij] = true;
+	if(found[1] && bdtbiased > BDT_cuts[ij]) BDTbiasednoPE_found[ij] = true;
+      }
+
       if(bdt < bdt_val){
 	found[0] = false;
 	found[1] = false;
       }
 
-      float dR_ele1ele2 = DR( data.gsfTrk_eta->at(recoEd), data.gsfTrk_phi->at(recoEd), data.gsfTrk_eta->at(trkEld), data.gsfTrk_phi->at(trkEld));
-      if(dR_ele1ele2 > 0.02) { /*std::cout << " dR_ele1ele2 = " << dR_ele1ele2 << std::endl; */ Triplet[1] = true;}
-      else found[1] = false;
-
       if (data.SelectedMu_index < 0) continue;
       if(found[0]) CutMutag[0] = true;
       if(found[1]) CutMutag[1] = true;
 
-
-      for(int ij=0; ij<100; ++ij){
-	if(found[0] && bdt > BDT_cut[ij]) BDT_found[ij] = true;
-	if(found[0] && bdtbiased > BDT_cut[ij]) BDTbiased_found[ij] true;
-	if(found[1] && bdt > BDT_cut[ij]) BDTnoPE_found[ij] = true;
-	if(found[1] && bdtbiased > BDT_cut[ij]) BDTbiasednoPE_found[ij] = true;
-      }
-
-
-
-      
+     
       float ZmuVtx = data.muon_vz->at(data.SelectedMu_index);
 
+      /*
       if (found[0] && fabs(data.gsfTrk_vz->at(recoEd) - ZmuVtx) < dzProbeTagMuon_val) CutDz[0] = true;
       else found[0] = false;
       if (found[1] && fabs(data.gsfTrk_vz->at(recoEd) - ZmuVtx) < dzProbeTagMuon_val) CutDz[1] = true;
       else found[1] = false;
+      */
 
       if (found[0] && data.TTrack_mll->at(ivtx) < mllCut_val) CutMll[0] = true;
       else found[0] = false;
@@ -688,6 +698,8 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
       if(found[1] && data.TTrack_chi_prob->at(ivtx) > vtxCLB_val) CutProb[1] = true; 
       else found[1] = false;
 
+
+
       if (found[0] &&  maxcos[0] < data.TTrack_cos->at(ivtx)) maxcos[0] = data.TTrack_cos->at(ivtx);
       if (found[0] && data.TTrack_cos->at(ivtx) > cosAlpha_val)  CutCos[0] = true;
       else found[0] = false;
@@ -700,19 +712,23 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
       if (found[1] && data.TTrack_PtEtaPhiM->at(ivtx).at(0) > pTB_val) CutPtB[1] = true;
       else found[1] = false;
 
-      if (found[0] && maxLxy[0] < data.TTrack_Lxy->at(ivtx)/TMath::Sqrt(data.TTrack_eLxy->at(ivtx)))
-	maxLxy[0] = data.TTrack_Lxy->at(ivtx)/TMath::Sqrt(data.TTrack_eLxy->at(ivtx));
+
+
+      // if (found[0] && maxLxy[0] < data.TTrack_Lxy->at(ivtx)/TMath::Sqrt(data.TTrack_eLxy->at(ivtx)))
+      // 	maxLxy[0] = data.TTrack_Lxy->at(ivtx)/TMath::Sqrt(data.TTrack_eLxy->at(ivtx));
       if (found[0] && data.TTrack_Lxy->at(ivtx)/TMath::Sqrt(data.TTrack_eLxy->at(ivtx)) > IPSB_val) CutLxy[0] = true;
       else found[0] = false;
       if (found[1] && data.TTrack_Lxy->at(ivtx)/TMath::Sqrt(data.TTrack_eLxy->at(ivtx)) > IPSB_val) CutLxy[1] = true;
       else found[1] = false;
       
+      /*
       float minpt = data.track_pt->at(kid);
       if (found[0] && data.track_pt->at(kid) > data.gsfTrk_pt->at(recoEd)) minpt = data.gsfTrk_pt->at(recoEd);
       if (found[0] && minTrk[0] < minpt) minTrk[0] = minpt;
       if(found[0] && isKstar && data.track_pt->at(pid) < minTrk[0]) minTrk[0] = data.track_pt->at(pid);
-
+      */
     }//loop over triplets
+
     
     for(int ij=0; ij<100; ++ij){
       if(BDT_found[ij]) ++BkgBDT[ij];
@@ -749,7 +765,7 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
 
   for(int ij=0; ij<4; ++ij){
     if(ij == 1) std::cout << "\n  data K* with charge exchange " << std::endl;
-    else if(ij == 3) std::cout << "\n  data K* withOUT charge exchange " << std::endl;
+    //else if(ij == 3) std::cout << "\n  data K* withOUT charge exchange " << std::endl;
     else continue;
     
     std::cout << " Total = " << nTrip_matched[ij]
@@ -785,18 +801,31 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
   }
 
   for(int ij=0; ij<100; ++ij){
-    SigBDT_DR[ij] = SigBDT_DR[ij]/ngenAcceptance[0];
-    SigBDTbiased_DR[ij] = SigBDTbiased_DR[ij]/ngenAcceptance[0];
-    SigBDTnoPE_DR[ij] = SigBDTnoPE_DR[ij]/ngenAcceptance[1];
-    SigBDTbiasednoPE_DR[ij] = SigBDTbiasednoPE_DR[ij]/ngenAcceptance[1];
+    if(BDT_cuts[ij] < 3.5) {
+      SigBDT_DR[ij] = 0.;
+      SigBDTbiased_DR[ij] = 0.;
+      SigBDTnoPE_DR[ij] = 0.;
+      SigBDTbiasednoPE_DR[ij] = 0.;
 
-    BkgBDT[ij] = BkgBDT[ij]/nEventsData;
-    BkgBDTbiased[ij] = BkgBDTbiased[ij]/nEventsData;
-    BkgBDTnoPE[ij] = BkgBDTnoPE[ij]/nEventsData;
-    BkgBDTbiasednoPE[ij] = BkgBDTbiasednoPE[ij]/nEventsData;
+      BkgBDT[ij] = 0.;
+      BkgBDTbiased[ij] = 0.;
+      BkgBDTnoPE[ij] = 0.;
+      BkgBDTbiasednoPE[ij] = 0.;
+    }
+    else{
+      SigBDT_DR[ij] = SigBDT_DR[ij]/ngenAcceptance[0];
+      SigBDTbiased_DR[ij] = SigBDTbiased_DR[ij]/ngenAcceptance[0];
+      SigBDTnoPE_DR[ij] = SigBDTnoPE_DR[ij]/ngenAcceptance[1];
+      SigBDTbiasednoPE_DR[ij] = SigBDTbiasednoPE_DR[ij]/ngenAcceptance[1];
+      
+      BkgBDT[ij] = BkgBDT[ij]/nEventsData;
+      BkgBDTbiased[ij] = BkgBDTbiased[ij]/nEventsData;
+      BkgBDTnoPE[ij] = BkgBDTnoPE[ij]/nEventsData;
+      BkgBDTbiasednoPE[ij] = BkgBDTbiasednoPE[ij]/nEventsData;
+    }
   }
 
-
+  /*
   TGraph * rocBDT = new TGraph(100, BkgBDT, SigBDT_DR);
   TCanvas *crocBDT = new TCanvas();
   crocBDT->cd();
@@ -813,8 +842,9 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
   rocBDTbiased->GetXaxis()->SetTitle("bkgRate  (leading ele BDTbiased)");
   rocBDTbiased->GetYaxis()->SetTitle("sigEff gen-matched (leading ele BDTbiased)");
   rocBDTbiased->Draw("ap");
+  */
 
-
+  /*
   TGraph * rocBDTnoPE = new TGraph(100, BkgBDTnoPE, SigBDTnoPE_DR);
   TCanvas *crocBDTnoPE = new TCanvas();
   crocBDTnoPE->cd();
@@ -831,7 +861,7 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
   rocBDTbiasednoPE->GetXaxis()->SetTitle("bkgRate noPE (leading ele BDTbiased)");
   rocBDTbiasednoPE->GetYaxis()->SetTitle("sigEff gen-matched noPE (leading ele BDTbiased)");
   rocBDTbiasednoPE->Draw("ap");
-
+  */
 
   /* not reviewed
   TGraph * rocCos = new TGraph(10,BkgEffCos,SigEffCos);

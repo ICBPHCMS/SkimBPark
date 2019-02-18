@@ -895,19 +895,19 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   if(!IsData){
    genAnalyze(iEvent,iSetup);
 
-   /*
+   
    genmu = genMuAnalyze(iEvent,iSetup);
    genMu_pt=genmu[0]; genMu_eta=genmu[1]; genMu_phi=genmu[2]; 
    genMu_ch=genmu[3];  genMu_motherId=genmu[4]; genMu_gmotherId=genmu[5]; 
 
    //gen muon pt decreasing order => can be replaced by SelectTrg_Object for new MC
    SelectedTrgObj_PtEtaPhiCharge = SimulateTrigger(genMu_pt, genMu_eta, genMu_phi, genMu_ch); 
-   */
+   
   }
 
   if(debugCOUT) std::cout << " analyzer => HLT paths  " << std::endl;
 
-  //    if (IsData){    
+  if (IsData){    
     std::pair<std::vector<float>, std::vector<std::vector<std::vector<float> > > > trgresult = HLTAnalyze(iEvent, iSetup, HLTPath_, HLTFilter_);
     trigger1=trgresult.first[0]; trigger2=trgresult.first[1]; trigger3=trgresult.first[2];  
     trigger4=trgresult.first[3]; trigger5=trgresult.first[4]; trigger6=trgresult.first[5];   
@@ -919,7 +919,7 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
     SelectedTrgObj_PtEtaPhiCharge = SelectTrg_Object(TrgObj1_PtEtaPhiCharge, TrgObj2_PtEtaPhiCharge, TrgObj3_PtEtaPhiCharge, 
 						     TrgObj4_PtEtaPhiCharge, TrgObj5_PtEtaPhiCharge, TrgObj6_PtEtaPhiCharge);
-    //}
+  }
 
 
 
@@ -1069,12 +1069,13 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     if(mvaSeeds.size() == 2 && mvaSeeds[0].isValid() && !mvaSeeds[0]->empty() && 
        mvaSeeds[1].isValid() && !mvaSeeds[1]->empty() && lowPtGsfTracks.isValid()){
       reco::GsfTrackRef gsf(lowPtGsfTracks, int(gsfT - lowPtGsfTracks->begin()));
+      if(float((*mvaSeeds[0])[gsf]) < 3.5) continue;
       gsfTrk_seedBDTunb.push_back(float((*mvaSeeds[0])[gsf]));
       gsfTrk_seedBDTbiased.push_back(float((*mvaSeeds[1])[gsf]));
     }
     else continue;
     ++ngsfTracks;
-    
+    if(debugCOUT) std::cout << " gsfSalvata " << std::endl;
     gsfTrk_pt.push_back(gsfT->pt()); 
     gsfTrk_eta.push_back(gsfT->eta());
     gsfTrk_phi.push_back(gsfT->phi()); 

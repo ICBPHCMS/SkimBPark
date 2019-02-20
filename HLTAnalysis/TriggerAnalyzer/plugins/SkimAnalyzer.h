@@ -174,6 +174,8 @@ private:
   TTree * t1;
   edm::Service<TFileService> fs;
 
+  TH1F* hbdt;
+
   int nmuons;
   std::vector<float> muon_pt;
   std::vector<float> muon_eta;

@@ -42,8 +42,9 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
     ccmc->Add("../test/outputBSkim_KeeVince_test_lowPtele.root");
   }
   else{
-    ccmc->Add("../test/outputBSkim_KsteeVince_test_lowPtele.root");
-    ccdata->Add("../test/outputBSkim_dataGeorge_test_lowPtele.root");
+    ccmc->Add("../test/outputBSkim_KsteeVince_test_lowPtele_500evts.root");
+    //ccdata->Add("../test/outputBSkim_test_lowPtele_data.root");
+    ccdata->Add("../test/outputBSkim_test_lowPtele_data_Allevts.root");
   }
   skim_class mc;
   mc.Init(ccmc);
@@ -202,8 +203,8 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
     if( DR(vel1.Eta(), vel1.Phi(), vel2.Eta(), vel2.Phi()) > 0.02) ++ngen[2];
 
     if(std::abs(vel1.Eta()) > 2.5 || std::abs(vel2.Eta()) > 2.5 || std::abs(vK.Eta()) > 2.5 ||
-       vel1.Pt() < 0.4 || vel2.Pt() < 0.4 || vK.Pt() < 0.4) continue;
-    if(isKstar && (vP.Pt() < 0.4 || std::abs(vP.Eta()) > 2.5 )) continue;
+       vel1.Pt() < 0.1 || vel2.Pt() < 0.1 || vK.Pt() < 0.1) continue;
+    if(isKstar && (vP.Pt() < 0.1 || std::abs(vP.Eta()) > 2.5 )) continue;
     ++ngenAcceptance[0];
     CutGenMatched[0] = true;
 
@@ -270,7 +271,7 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
        float bdtbiased = mc.gsfTrk_seedBDTbiased->at(recoEd);
 
        float dR_ele1 = DR(vel1.Eta(), vel1.Phi(), mc.gsfTrk_eta->at(recoEd), mc.gsfTrk_phi->at(recoEd));
-       float dR_ele2 = DR(vel2.Eta(), vel2.Phi(), mc.gsfTrk_eta->at(trkEld), mc.gsfTrk_phi->at(trkEld));
+       float dR_ele2 = DR(vel2.Eta(), vel2.Phi(), mc.track_eta->at(trkEld), mc.track_phi->at(trkEld));
        float dR_trk = DR(vK.Eta(), vK.Phi(), mc.track_eta->at(trkKd), mc.track_phi->at(trkKd));
        float dR_trp = isKstar ? DR(vP.Eta(), vP.Phi(), mc.track_eta->at(trkPd), mc.track_phi->at(trkPd)) : 0;
 
@@ -295,7 +296,7 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
          Bindex[0] = iB;
 	 //std::cout << " >>> found triplet " << std::endl;
        }
-       float dRrecoEleEle = DR(mc.gsfTrk_eta->at(recoEd), mc.gsfTrk_phi->at(recoEd), mc.gsfTrk_eta->at(trkEld), mc.gsfTrk_phi->at(trkEld));
+       float dRrecoEleEle = DR(mc.gsfTrk_eta->at(recoEd), mc.gsfTrk_phi->at(recoEd), mc.track_eta->at(trkEld), mc.track_phi->at(trkEld));
        if(CutGenMatched[1] && dRrecoEleEle > 0.02 && withBdR < globaldR[1] && bdt > bdt_val){
 	 bestPtRatio[1] = vrB.Pt()/genB.Pt();
 	 globaldR[1] = withBdR;
@@ -388,7 +389,7 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
 
      if(found){
      vrel.SetPtEtaPhiM(mc.gsfTrk_pt->at(recoE[0]), mc.gsfTrk_eta->at(recoE[0]), mc.gsfTrk_phi->at(recoE[0]), ElectronMass);
-     vreltrk.SetPtEtaPhiM(mc.gsfTrk_pt->at(trkEl[0]), mc.gsfTrk_eta->at(trkEl[0]),mc.gsfTrk_phi->at(trkEl[0]), ElectronMass);   
+     vreltrk.SetPtEtaPhiM(mc.track_pt->at(trkEl[0]), mc.track_eta->at(trkEl[0]),mc.track_phi->at(trkEl[0]), ElectronMass);   
      vrK.SetPtEtaPhiM(mc.track_pt->at(trkK[0]),mc.track_eta->at(trkK[0]),mc.track_phi->at(trkK[0]), KaonMass);
      if(isKstar) vrP.SetPtEtaPhiM(mc.track_pt->at(trkP[0]),mc.track_eta->at(trkP[0]),mc.track_phi->at(trkP[0]), PionMass);     
      vrB = isKstar ? vrP+vrK+vrel+vreltrk : vrK+vrel+vreltrk;
@@ -396,7 +397,7 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
 
      if(foundPE){
      vrelPE.SetPtEtaPhiM(mc.gsfTrk_pt->at(recoE[1]), mc.gsfTrk_eta->at(recoE[1]), mc.gsfTrk_phi->at(recoE[1]), ElectronMass);
-     vreltrkPE.SetPtEtaPhiM(mc.gsfTrk_pt->at(trkEl[1]), mc.gsfTrk_eta->at(trkEl[1]),mc.gsfTrk_phi->at(trkEl[1]), ElectronMass);   
+     vreltrkPE.SetPtEtaPhiM(mc.track_pt->at(trkEl[1]), mc.track_eta->at(trkEl[1]),mc.track_phi->at(trkEl[1]), ElectronMass);   
      vrKPE.SetPtEtaPhiM(mc.track_pt->at(trkK[1]),mc.track_eta->at(trkK[1]),mc.track_phi->at(trkK[1]), KaonMass);
      if(isKstar) vrPPE.SetPtEtaPhiM(mc.track_pt->at(trkP[1]),mc.track_eta->at(trkP[1]),mc.track_phi->at(trkP[1]), PionMass);     
      vrBPE = isKstar ? vrPPE+vrKPE+vrelPE+vreltrkPE : vrKPE+vrelPE+vreltrkPE;
@@ -628,7 +629,7 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
       float bdtbiased = data.gsfTrk_seedBDTbiased->at(recoEd);
       bool found[2] = {true, true}; 
 
-      float dR_ele1ele2 = DR( data.gsfTrk_eta->at(recoEd), data.gsfTrk_phi->at(recoEd), data.gsfTrk_eta->at(trkEld), data.gsfTrk_phi->at(trkEld));
+      float dR_ele1ele2 = DR( data.gsfTrk_eta->at(recoEd), data.gsfTrk_phi->at(recoEd), data.track_eta->at(trkEld), data.track_phi->at(trkEld));
       if(dR_ele1ele2 > 0.02) { /*std::cout << " dR_ele1ele2 = " << dR_ele1ele2 << std::endl; */ Triplet[1] = true;}
       else found[1] = false;
 

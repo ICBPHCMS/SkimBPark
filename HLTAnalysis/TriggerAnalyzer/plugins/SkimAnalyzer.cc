@@ -120,6 +120,8 @@ SkimAnalyzer::SkimAnalyzer(const edm::ParameterSet& iConfig):
 
   bdt.SetWeight(weights);  
   */
+
+  hbdt = fs->make<TH1F>("hbdt", "", 1000, -10., 10.);
   
   t1 = fs->make<TTree>("mytree","mytree"); 
   t1->Branch("event",&event);
@@ -301,7 +303,7 @@ void SkimAnalyzer::genAnalyze(const edm::Event& iEvent, const edm::EventSetup& i
       
 	  if(debugCOUT) std::cout << " daug " << iD << " pdgID = " << pdgId << " pt = " << partPt << " eta = " << partEta << std::endl;
 
-	  if(partPt < 0.2) continue;
+	  if(partPt < 0.1) continue;
 	  if(std::abs(partEta) > 2.6) continue;
 	  
 	  if(abs(pdgId) == LeptonFinalStateID && genpart_lep1FromB_index < 0)
@@ -348,7 +350,7 @@ void SkimAnalyzer::genAnalyze(const edm::Event& iEvent, const edm::EventSetup& i
 
 	  if(debugCOUT) std::cout << " daug " << iD << " pdgID = " << pdgId << " pt = " << partPt << " eta = " << partEta << std::endl;	  
 
-	  if(partPt < 0.2) continue;
+	  if(partPt < 0.1) continue;
 	  if(std::abs(partEta) > 2.6) continue;
 	  
 	  if(abs(pdgId) == LeptonFinalStateID && genpart_lep1FromB_index < 0)
@@ -370,7 +372,7 @@ void SkimAnalyzer::genAnalyze(const edm::Event& iEvent, const edm::EventSetup& i
 	      
 	      if(debugCOUT) std::cout << " gdaug " << iD << " pdgID = " << pdgId_gd << " pt = " << partPt_gd << " eta = " << partEta_gd << std::endl;
 
-	      if(partPt_gd < 0.2) continue;
+	      if(partPt_gd < 0.1) continue;
 	      if(std::abs(partEta_gd) > 2.6) continue;
 	      
 	      if(abs(pdgId_gd) == 321) 
@@ -896,6 +898,11 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
    genAnalyze(iEvent,iSetup);
 
    
+   if(genpart_B_index == -1){
+     t1->Fill();
+     return;
+   }
+
    genmu = genMuAnalyze(iEvent,iSetup);
    genMu_pt=genmu[0]; genMu_eta=genmu[1]; genMu_phi=genmu[2]; 
    genMu_ch=genmu[3];  genMu_motherId=genmu[4]; genMu_gmotherId=genmu[5]; 
@@ -1069,9 +1076,15 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     if(mvaSeeds.size() == 2 && mvaSeeds[0].isValid() && !mvaSeeds[0]->empty() && 
        mvaSeeds[1].isValid() && !mvaSeeds[1]->empty() && lowPtGsfTracks.isValid()){
       reco::GsfTrackRef gsf(lowPtGsfTracks, int(gsfT - lowPtGsfTracks->begin()));
+      float bdtU = float((*mvaSeeds[0])[gsf]);
+      float bdtB = float((*mvaSeeds[1])[gsf]);
 
-      gsfTrk_seedBDTunb.push_back(float((*mvaSeeds[0])[gsf]));
-      gsfTrk_seedBDTbiased.push_back(float((*mvaSeeds[1])[gsf]));
+      hbdt->Fill(bdtU);
+      if(debugCOUT && bdtU > 6.5 ) std::cout << " float((*mvaSeeds[0])[gsf]) = " << bdtU << std::endl;
+      if(bdtU < -10.) continue;
+
+      gsfTrk_seedBDTunb.push_back(bdtU);
+      gsfTrk_seedBDTbiased.push_back(bdtB);
     }
     else continue;
     ++ngsfTracks;
@@ -1104,14 +1117,13 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       if (fabs(trk->dxy())/trk->dxyError() < TrackSdxy_Cut) continue;
 
       // exclude tracks overlapping reco muons
-      /*
       double minDR = 1000;
       for (typename vector<reco::Muon>::const_iterator mu = muons->begin(); mu!=muons->end(); mu++){
 	double tempDR = DR(mu->eta(),mu->phi(),trk->eta(),trk->phi());
 	if (tempDR < minDR) minDR = tempDR;
       }
-      if (minDR < MuTrkMinDR_Cut) continue;
-      */
+      if (minDR < 0.02/*MuTrkMinDR_Cut*/) continue;
+      
       
       //parameters from the muon matched in dr to the trigger muon
       if (SelectedMu_index != -1 ){
@@ -1133,18 +1145,9 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       track_container.push_back(trk_index);
       trk_index++; ntracks++;  
 
-      //bdt   
-      /*
-      trk_pt =trk->pt(); trk_eta = trk->eta(); trk_phi = trk->phi(); trk_p =trk->p();
-      trk_nhits = trk->found(); trk_high_purity = trk->quality(Track::highPurity);
-      trk_chi2red = trk->normalizedChi2();
-      float features[7]={trk_pt,trk_eta,trk_phi,trk_p,trk_nhits,trk_high_purity,trk_chi2red };
-      float bdt_out = bdt.gbr->GetClassifier(features);
-      track_mva.push_back(bdt_out);
-      */
     }
   }//!use only BToKee MC for triplets 
-  
+  if(debugCOUT) std::cout << " tracks.size() = " << cleanedTracks.size() << std::endl;
 
 
   if (SaveOnlyTracks) {
@@ -1160,7 +1163,10 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     if(debugCOUT) std::cout << " now triplets " << std::endl;
     // fit track pairs  
     std::vector<std::shared_ptr<reco::GsfTrack> > cleanedObjTracks;
-    std::vector<std::shared_ptr<reco::GsfTrack> > cleanedPairTracks;
+    //lepton+lepton+track
+    //    std::vector<std::shared_ptr<reco::GsfTrack> > cleanedPairTracks;
+    //lepton + track +track
+    std::vector<std::shared_ptr<reco::Track> > cleanedPairTracks;
   
     TLorentzVector vel1, vel2;
     std::vector<reco::TransientTrack> tempTracks;
@@ -1169,7 +1175,11 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     std::vector<std::shared_ptr<reco::GsfTrack> > cleanedObjects; 
     for(auto & vec: gsfElTracks) cleanedObjects.push_back(vec);  
 
-    if (cleanedObjects.size() == 0) { if(debugCOUT) std::cout << " cleanedObjects.size() == 0 " << "gsfElTracks.size = " << gsfElTracks.size() << std::endl; return;}
+    if (cleanedObjects.size() == 0) { 
+      if(debugCOUT) std::cout << " cleanedObjects.size() == 0 " << "gsfElTracks.size = " << gsfElTracks.size() << std::endl; 
+      t1->Fill();
+      return;
+    }
 
     for(unsigned int iobj=0; iobj<cleanedObjects.size(); ++iobj){
       auto obj = cleanedObjects.at(iobj);
@@ -1177,15 +1187,14 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       if(LeptonFinalStateID == 13 && gsf_id.at(iobj) != 13) continue;
       else if (LeptonFinalStateID == 11 && gsf_id.at(iobj) != 11) continue;
 
-      if(gsfTrk_seedBDTunb.at(iobj) < 3.5) continue;
-
-
       //the following two for lepton+track+track
-      //for(unsigned int itrk2=0; itrk2<cleanedTracks.size(); itrk2++){
-      //	auto trk2 = cleanedTracks.at(itrk2);
-      //the following two for lepton+lepton+track
-      for(unsigned int itrk2=0; itrk2<cleanedObjects.size(); itrk2++){
-      	auto trk2 = cleanedObjects.at(itrk2);
+      for(unsigned int itrk2=0; itrk2<cleanedTracks.size(); itrk2++){
+      	auto trk2 = cleanedTracks.at(itrk2);
+
+	//the following two for lepton+lepton+track
+	//for(unsigned int itrk2=0; itrk2<cleanedObjects.size(); itrk2++){
+      	//auto trk2 = cleanedObjects.at(itrk2);
+
 	if (obj->charge()*trk2->charge() == 1) continue;
 	if (ObjPtLargerThanTrack && obj->pt() < trk2->pt()) continue;
 
@@ -1232,10 +1241,13 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	cleanedObjTracks.push_back(obj);
 	cleanedPairTracks.push_back(trk2);
 	Epair_ObjIndex.push_back(gsf_container.at(iobj));
+
 	//if lep + track+track
-	//Epair_TrkIndex.push_back(track_container.at(itrk2));
+	Epair_TrkIndex.push_back(track_container.at(itrk2));
+
 	//if lep + lep +track
-	Epair_TrkIndex.push_back(gsf_container.at(itrk2));
+	//Epair_TrkIndex.push_back(gsf_container.at(itrk2));
+
 	Epair_ObjId.push_back(gsf_id.at(iobj));   
 
 	tempPtEtaPhiM.clear(); tempXYZ.clear();
@@ -1274,8 +1286,6 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
 	if (trk->pt() < PtKTrack_Cut) continue;
          
-	//isKll
-	//if(isKll || !isKll){
 	if(isKll){
 	  if (fabs(trk->dxy(vertex_point))/trk->dxyError() < Ksdxy_Cut) continue;
 
@@ -1333,7 +1343,6 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	  if (EarlyStop) break;
 	}//isKll
 	else{//K*ll
-	//	if(1 == 2){
 	  //auto objtrk = cleanedObjTracks.at(iobj);
 	  //auto pairtrk = cleanedPairTracks.at(iobj);
 	  //auto trk = cleanedTracks.at(itrk);
@@ -1492,7 +1501,9 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   for(auto & vec: MuTracks) cleanedObjects.push_back(vec);
   for(auto & vec: ElTracks) cleanedObjects.push_back(vec);  
 
-  if (cleanedObjects.size() == 0) { if(debugCOUT) std::cout << " cleanedObjects.size() == 0 " << "ElTracks.size = " << ElTracks.size() << std::endl; return;}
+  if (cleanedObjects.size() == 0) { if(debugCOUT) std::cout << " cleanedObjects.size() == 0 " << "ElTracks.size = " << ElTracks.size() << std::endl; 
+    t1->Fill();
+    return;}
 
   for(unsigned int iobj=0; iobj<cleanedObjects.size(); iobj++){
     auto obj = cleanedObjects.at(iobj);

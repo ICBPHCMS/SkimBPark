@@ -38,12 +38,12 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
   TChain *ccdata = new TChain("demo/mytree");
 
   if(!isKstar){
-    ccdata->Add("fileFromTheSkim_onDATA.root");
-    ccmc->Add("fileFromTheSim_onMC_Kee.root");
+    ccdata->Add("../plugins/outputBSkim_dataGeorge_test_lowPtele.root");
+    ccmc->Add("../plugins/outputBSkim_KeeVince_test_lowPtele.root");
   }
   else{
-    ccmc->Add("fileFromTheSkim_onDATA.root");
-    ccdata->Add("fileFromTheSim_onMC_K*ee.root");
+    ccmc->Add("../test/outputBSkim_KsteeVince_test_lowPtele.root");
+    ccdata->Add("../test/outputBSkim_KsteeVince_test_lowPtele.root");
   }
   skim_class mc;
   mc.Init(ccmc);
@@ -118,13 +118,13 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
 
   float dRMCmatching_val = 0.06;
   float dzProbeTagMuon_val = 0.3;
-  float bdt_val = 3.5;
-  float mllCut_val = 5.;
-  float k0starMassdiff_minval = 0.8; //20MeV in PDG error is 0.2MeV
-  float k0starMassdiff_maxval = 1.1; //20MeV in PDG error is 0.2MeV
-  float pTK_val = 0.4;
-  float mBmax_val = 6.;
-  float mBmin_val = 4.1;
+  float bdt_val = 6.5;
+  float mllCut_val = 100.;
+  float k0starMassdiff_minval = 0.; //20MeV in PDG error is 0.2MeV
+  float k0starMassdiff_maxval = 100; //20MeV in PDG error is 0.2MeV
+  float pTK_val = 0.;
+  float mBmax_val = 100.;
+  float mBmin_val = 1.;
   float vtxCLB_val = 1.e-3;
   float cosAlpha_val = 0.9;
   float pTB_val = 5.;
@@ -202,8 +202,8 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
     if( DR(vel1.Eta(), vel1.Phi(), vel2.Eta(), vel2.Phi()) > 0.02) ++ngen[2];
 
     if(std::abs(vel1.Eta()) > 2.5 || std::abs(vel2.Eta()) > 2.5 || std::abs(vK.Eta()) > 2.5 ||
-       vel1.Pt() < 0.4 || vel2.Pt() < 0.4 || vK.Pt() < 0.4) continue;
-    if(isKstar && (vP.Pt() < 0.4 || std::abs(vP.Eta()) > 2.5 )) continue;
+       vel1.Pt() < 0.2 || vel2.Pt() < 0.2 || vK.Pt() < 0.2) continue;
+    if(isKstar && (vP.Pt() < 0.2 || std::abs(vP.Eta()) > 2.5 )) continue;
     ++ngenAcceptance[0];
     CutGenMatched[0] = true;
 
@@ -423,6 +423,7 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
     if(CutMatch[0]) { CutMuTag[0] = true;   ++nTrip_matched_MuTag[0];}
     if(CutMatch[1]) { CutMuTag[1] = true;  ++nTrip_matched_MuTag[2];}
   
+    /*
     if(CutMuTag[0] && fabs(mc.muon_vz->at(mc.SelectedMu_index) - mc.gsfTrk_vz->at(recoE[0]) ) <  dzProbeTagMuon_val) {
       CutDz[0] = true;
       ++ndZ_cut[0];
@@ -431,13 +432,13 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
       CutDz[1] = true;
       ++ndZ_cut[2];
     }
+    */
 
-
-    if( CutDz[0] && (vrel+vreltrk).M() < mllCut_val) {
+    if( CutMuTag[0] && (vrel+vreltrk).M() < mllCut_val) {
       CutMll[0] = true;
       ++nMll_cut[0];
     }
-    if( CutDz[1] && (vrelPE+vreltrkPE).M() < mllCut_val) {
+    if( CutMuTag[1] && (vrelPE+vreltrkPE).M() < mllCut_val) {
       CutMll[1] = true;
       ++nMll_cut[2];
     }
@@ -633,10 +634,10 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
 
 
       for(int ij=0; ij<100; ++ij){
-	if(found[0] && bdt > BDT_cut[ij]) BDT_found[ij] = true;
-	if(found[0] && bdtbiased > BDT_cut[ij]) BDTbiased_found[ij] true;
-	if(found[1] && bdt > BDT_cut[ij]) BDTnoPE_found[ij] = true;
-	if(found[1] && bdtbiased > BDT_cut[ij]) BDTbiasednoPE_found[ij] = true;
+	if(found[0] && bdt > BDT_cuts[ij]) BDT_found[ij] = true;
+	if(found[0] && bdtbiased > BDT_cuts[ij]) BDTbiased_found[ij] = true;
+	if(found[1] && bdt > BDT_cuts[ij]) BDTnoPE_found[ij] = true;
+	if(found[1] && bdtbiased > BDT_cuts[ij]) BDTbiasednoPE_found[ij] = true;
       }
 
 
@@ -644,10 +645,12 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
       
       float ZmuVtx = data.muon_vz->at(data.SelectedMu_index);
 
+      /*
       if (found[0] && fabs(data.gsfTrk_vz->at(recoEd) - ZmuVtx) < dzProbeTagMuon_val) CutDz[0] = true;
       else found[0] = false;
       if (found[1] && fabs(data.gsfTrk_vz->at(recoEd) - ZmuVtx) < dzProbeTagMuon_val) CutDz[1] = true;
       else found[1] = false;
+      */
 
       if (found[0] && data.TTrack_mll->at(ivtx) < mllCut_val) CutMll[0] = true;
       else found[0] = false;
@@ -749,7 +752,7 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
 
   for(int ij=0; ij<4; ++ij){
     if(ij == 1) std::cout << "\n  data K* with charge exchange " << std::endl;
-    else if(ij == 3) std::cout << "\n  data K* withOUT charge exchange " << std::endl;
+    //else if(ij == 3) std::cout << "\n  data K* withOUT charge exchange " << std::endl;
     else continue;
     
     std::cout << " Total = " << nTrip_matched[ij]
@@ -796,7 +799,7 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
     BkgBDTbiasednoPE[ij] = BkgBDTbiasednoPE[ij]/nEventsData;
   }
 
-
+  /*
   TGraph * rocBDT = new TGraph(100, BkgBDT, SigBDT_DR);
   TCanvas *crocBDT = new TCanvas();
   crocBDT->cd();
@@ -831,7 +834,7 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
   rocBDTbiasednoPE->GetXaxis()->SetTitle("bkgRate noPE (leading ele BDTbiased)");
   rocBDTbiasednoPE->GetYaxis()->SetTitle("sigEff gen-matched noPE (leading ele BDTbiased)");
   rocBDTbiasednoPE->Draw("ap");
-
+  */
 
   /* not reviewed
   TGraph * rocCos = new TGraph(10,BkgEffCos,SigEffCos);

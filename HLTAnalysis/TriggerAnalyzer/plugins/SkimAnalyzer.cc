@@ -903,6 +903,12 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
    //gen muon pt decreasing order => can be replaced by SelectTrg_Object for new MC
    SelectedTrgObj_PtEtaPhiCharge = SimulateTrigger(genMu_pt, genMu_eta, genMu_phi, genMu_ch); 
    */
+
+   if(genpart_B_index == -1){
+     //t1->Fill();
+     return;
+   }
+
   }
 
   if(debugCOUT) std::cout << " analyzer => HLT paths  " << std::endl;
@@ -1103,14 +1109,14 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       if (fabs(trk->dxy())/trk->dxyError() < TrackSdxy_Cut) continue;
 
       // exclude tracks overlapping reco muons
-      /*
+      
       double minDR = 1000;
       for (typename vector<reco::Muon>::const_iterator mu = muons->begin(); mu!=muons->end(); mu++){
 	double tempDR = DR(mu->eta(),mu->phi(),trk->eta(),trk->phi());
 	if (tempDR < minDR) minDR = tempDR;
       }
-      if (minDR < MuTrkMinDR_Cut) continue;
-      */
+      if (minDR < 0.02) continue;
+      
       
       //parameters from the muon matched in dr to the trigger muon
       if (SelectedMu_index != -1 ){
@@ -1168,7 +1174,11 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     std::vector<std::shared_ptr<reco::GsfTrack> > cleanedObjects; 
     for(auto & vec: gsfElTracks) cleanedObjects.push_back(vec);  
 
-    if (cleanedObjects.size() == 0) { if(debugCOUT) std::cout << " cleanedObjects.size() == 0 " << "gsfElTracks.size = " << gsfElTracks.size() << std::endl; return;}
+    if (cleanedObjects.size() == 0) { 
+      if(debugCOUT) std::cout << " cleanedObjects.size() == 0 " << "gsfElTracks.size = " << gsfElTracks.size() << std::endl; 
+      t1->Fill();
+      return;
+    }
 
     for(unsigned int iobj=0; iobj<cleanedObjects.size(); ++iobj){
       auto obj = cleanedObjects.at(iobj);
@@ -1176,17 +1186,23 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       if(LeptonFinalStateID == 13 && gsf_id.at(iobj) != 13) continue;
       else if (LeptonFinalStateID == 11 && gsf_id.at(iobj) != 11) continue;
 
+
+      if(gsfTrk_seedBDTunb.at(iobj) < 4) continue;
+
       //the following two for lepton+track+track
       //for(unsigned int itrk2=0; itrk2<cleanedTracks.size(); itrk2++){
       //	auto trk2 = cleanedTracks.at(itrk2);
       //the following two for lepton+lepton+track
       for(unsigned int itrk2=0; itrk2<cleanedObjects.size(); itrk2++){
       	auto trk2 = cleanedObjects.at(itrk2);
+	if(itrk2 == iobj) continue;
+
 	if (obj->charge()*trk2->charge() == 1) continue;
 	if (ObjPtLargerThanTrack && obj->pt() < trk2->pt()) continue;
 
 	float dR_l1l2 = DR(obj->eta(), obj->phi(), trk2->eta(), trk2->phi());
 	if(dR_l1l2 < TrkObjExclusionCone && (isKll || LeptonFinalStateID == 13)) continue;
+	//if(dR_l1l2 < TrkObjExclusionCone) continue;
 	// if(!isKll && LeptonFinalStateID == 11 && 1.*sharedHits((*obj), (*trk2)) / obj->numberOfValidHits() > 0.5){
 	// 	std::cout << " >> fraction shared = " << 1.*sharedHits((*obj), (*trk2))/ obj->numberOfValidHits()  << std::endl;
 	// }
@@ -1212,6 +1228,7 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
 	LLvertex = theKalmanFitter.vertex(tempTracks);
 	if (!LLvertex.isValid()) continue;
+	//	std::cout << " ee vertex is valid " << std::endl;
 
 	if (ChiSquaredProbability(LLvertex.totalChiSquared(),LLvertex.degreesOfFreedom()) < Probee_Cut)  continue;
 	if (SelectedMu_index != -1 && fabs(ZvertexTrg-LLvertex.position().z()) > EpairZvtx_Cut ) continue;
@@ -1258,6 +1275,8 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     TLorentzVector vK; 
     TLorentzVector vPi;
     int kstarIndex = 0;
+
+    std::cout << " cleanedObjTracks.size() = " << cleanedObjTracks.size() << " cleanedTracks.size() = " << cleanedTracks.size() << std::endl;
     for(unsigned int iobj=0; iobj<cleanedObjTracks.size(); iobj++){
       auto objtrk = cleanedObjTracks.at(iobj);
       auto pairtrk = cleanedPairTracks.at(iobj);
@@ -1375,6 +1394,8 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	    LLvertex = theKalmanFitter.vertex(tempTracks);
 	    if (!LLvertex.isValid()) continue;
 
+	    //	    std::cout << " K* vertex is valid " << std::endl;
+
 	    if (ChiSquaredProbability(LLvertex.totalChiSquared(),LLvertex.degreesOfFreedom()) < ProbKst_Cut) continue;
 	    GlobalError err = LLvertex.positionError();
 	    GlobalPoint Dispbeamspot( -1 * ((theBeamSpot->x0()-LLvertex.position().x()) + (LLvertex.position().z()-theBeamSpot->z0()) * theBeamSpot->dxdz()),
@@ -1409,6 +1430,7 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	    if ((vel1+vel2+vPi+vK).M() > MaxBeeKst_Cut || (vPi+vK+vel1+vel2).M() < MinBeeKst_Cut) continue;
             if ((vel1+vel2+vPi+vK).Pt() < PtBeeKst_Cut) continue;
 
+	    //	    std::cout << " eeK* M pT ok  " << std::endl;
 	    if(debugCOUT) std::cout << " eeK* post pT and M  " << std::endl;
 
 	    ///if ok 4tracks fit
@@ -1423,6 +1445,7 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	    LLvertex = theKalmanFitter.vertex(tempTracks);
 	    if (!LLvertex.isValid()) continue;
 
+	    //	    std::cout << " eeK* vertex is valid " << std::endl;
 	    if(debugCOUT) std::cout << " check eeK* vertex " << std::endl;
 
 	    if (ChiSquaredProbability(LLvertex.totalChiSquared(),LLvertex.degreesOfFreedom()) < ProbBeeKst_Cut) continue;
@@ -1488,7 +1511,9 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   for(auto & vec: MuTracks) cleanedObjects.push_back(vec);
   for(auto & vec: ElTracks) cleanedObjects.push_back(vec);  
 
-  if (cleanedObjects.size() == 0) { if(debugCOUT) std::cout << " cleanedObjects.size() == 0 " << "ElTracks.size = " << ElTracks.size() << std::endl; return;}
+  if (cleanedObjects.size() == 0) { if(debugCOUT) std::cout << " cleanedObjects.size() == 0 " << "ElTracks.size = " << ElTracks.size() << std::endl; 
+    t1->Fill();
+    return;}
 
   for(unsigned int iobj=0; iobj<cleanedObjects.size(); iobj++){
     auto obj = cleanedObjects.at(iobj);
@@ -1786,7 +1811,8 @@ void SkimAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
   //  if (TTrack_chi_prob.size() == 0) Init();
 
-  if(debugCOUT) std::cout << " filling histo genpart_B_index = " << genpart_B_index << " TTrack_cos.size() = " << TTrack_cos.size() << std::endl;
+  //if(debugCOUT) 
+  std::cout << " filling histo genpart_B_index = " << genpart_B_index << " TTrack_cos.size() = " << TTrack_cos.size() << std::endl;
   t1->Fill();
 }
 

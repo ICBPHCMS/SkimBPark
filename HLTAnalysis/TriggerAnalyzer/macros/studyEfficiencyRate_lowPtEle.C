@@ -43,7 +43,7 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
   }
   else{
     ccmc->Add("../test/outputBSkim_KsteeVince_test_lowPtele.root");
-    ccdata->Add("../test/outputBSkim_KsteeVince_test_lowPtele.root");
+    ccdata->Add("../plugins/outputBSkim_dataGeorge_test_lowPtele.root");
   }
   skim_class mc;
   mc.Init(ccmc);
@@ -151,7 +151,8 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
   float nIPSB_cut[4] = {0., 0., 0., 0.};
 
 
-  for (int ev=0; ev<nEventsMC; ev++){
+  //  for (int ev=0; ev<nEventsMC; ev++){
+  for (int ev=0; ev<0; ev++){
     mc.GetEntry(ev);
 
     //take reco candidate closest to gen
@@ -564,6 +565,9 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
   float nEventsData = ccdata->GetEntries();
   std::cout << " \n data events " << nEventsData << std::endl;
 
+  isKstar = 0;
+
+
   for (int ev=0; ev<nEventsData; ev++){
     //for (int ev=0; ev<100; ev++){
     data.GetEntry(ev);
@@ -619,14 +623,15 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
       float bdtbiased = data.gsfTrk_seedBDTbiased->at(recoEd);
       bool found[2] = {true, true}; 
 
+      float dR_ele1ele2 = DR( data.gsfTrk_eta->at(recoEd), data.gsfTrk_phi->at(recoEd), data.gsfTrk_eta->at(trkEld), data.gsfTrk_phi->at(trkEld));
+      if(dR_ele1ele2 > 0.02) { /*std::cout << " dR_ele1ele2 = " << dR_ele1ele2 << std::endl; */ Triplet[1] = true;}
+      else found[1] = false;
+
+
       if(bdt < bdt_val){
 	found[0] = false;
 	found[1] = false;
       }
-
-      float dR_ele1ele2 = DR( data.gsfTrk_eta->at(recoEd), data.gsfTrk_phi->at(recoEd), data.gsfTrk_eta->at(trkEld), data.gsfTrk_phi->at(trkEld));
-      if(dR_ele1ele2 > 0.02) { /*std::cout << " dR_ele1ele2 = " << dR_ele1ele2 << std::endl; */ Triplet[1] = true;}
-      else found[1] = false;
 
       if (data.SelectedMu_index < 0) continue;
       if(found[0]) CutMutag[0] = true;

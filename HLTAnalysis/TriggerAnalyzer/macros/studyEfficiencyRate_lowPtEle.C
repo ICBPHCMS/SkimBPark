@@ -151,8 +151,7 @@ int studyEfficiencyRate_lowPtEle(int isKstar = 0){
   float nIPSB_cut[4] = {0., 0., 0., 0.};
 
 
-  //  for (int ev=0; ev<nEventsMC; ev++){
-  for (int ev=0; ev<0; ev++){
+    for (int ev=0; ev<nEventsMC; ev++){
     mc.GetEntry(ev);
 
     //take reco candidate closest to gen
